@@ -1,4 +1,6 @@
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class Movement : MonoBehaviour
 {
@@ -12,23 +14,29 @@ public class Movement : MonoBehaviour
 
     public Transform orientation;
 
-    float horizantalInput;
-    float verticalInput;
 
     Vector3 moveDirection;
 
     Rigidbody rb;
 
+    TPSActions _actions;
+    TPSActions.TpsDefalutActions _tpsActions;
+    Vector2 _input;
+    public InputActionReference refe;
+
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+
+        _actions = new TPSActions();
+        _tpsActions = _actions.tpsDefalut;
     }
     private void Update()
     {
         grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * .5f + .2f, whatisGround);
 
-        MyInput();
+        _input = refe.action.ReadValue<Vector2>();
         if (grounded)
             rb.linearDamping = groundDrag;
         else
@@ -37,18 +45,14 @@ public class Movement : MonoBehaviour
 
     private void FixedUpdate()
     {
-        MovePlayer();
+        MovePlayer(_input);
     }
 
-    public void MyInput()
-    {
-        horizantalInput = Input.GetAxisRaw("Horizontal");
-        verticalInput = Input.GetAxisRaw("Vertical");
-    }
 
-    private void MovePlayer()
+    private void MovePlayer(Vector2 input)
     {
-        moveDirection = orientation.forward * verticalInput + orientation.right * horizantalInput;
+
+        moveDirection = orientation.forward * input.y + orientation.right * input.x;
 
         rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
     }

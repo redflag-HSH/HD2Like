@@ -33,7 +33,6 @@ public class CameraController : MonoBehaviour
         Vector3 viewDir = player.position - new Vector3(transform.position.x, player.position.y, transform.position.z);
         orientation.forward = viewDir.normalized;
 
-        print(_tpsActions.Move.ReadValue<Vector2>());
         Vector2 input = refe.action.ReadValue<Vector2>();
         Vector3 inputDir = orientation.forward * input.y + orientation.right * input.x;
 

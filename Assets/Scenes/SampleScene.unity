@@ -989,7 +989,7 @@ GameObject:
   - component: {fileID: 939160131}
   - component: {fileID: 939160130}
   - component: {fileID: 939160129}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1095,6 +1095,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1014533771}
   - component: {fileID: 1014533772}
+  - component: {fileID: 1014533773}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -1146,6 +1147,26 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 112
   m_CollisionDetection: 0
+--- !u!114 &1014533773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1014533770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88bfc8339570c8946bc417419c76b037, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 5
+  groundDrag: 4
+  playerHeight: 8
+  whatisGround:
+    serializedVersion: 2
+    m_Bits: 64
+  orientation: {fileID: 1242662448}
+  refe: {fileID: 1299004581505916053, guid: d0d9200e9cdd79b46b4d32955b7ac589, type: 3}
 --- !u!1 &1242662447
 GameObject:
   m_ObjectHideFlags: 0
