@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Cinemachine;
 using Unity.VisualScripting;
@@ -7,10 +8,12 @@ using UnityEngine.InputSystem;
 public class CameraController : MonoBehaviour
 {
     public Movement movement;
+    public WeaponController weaponController;
 
     TPSActions _actions;
     TPSActions.TpsDefalutActions _tpsActions;
 
+    public List<float> frostDrag;
 
     [Header("refernces")]
     public Transform orientation;
@@ -41,26 +44,31 @@ public class CameraController : MonoBehaviour
         _actions.Enable();
         SwitchCameraStyle(currentStyle);
         movement = player.GetComponent<Movement>();
-
+        LockM(true);
     }
     private void Update()
     {
+
+        AimZoomCheck();
+
+
         Vector3 viewDir = player.position - new Vector3(transform.position.x, player.position.y, transform.position.z);
         orientation.forward = viewDir.normalized;
         Vector2 input = _tpsActions.Move.ReadValue<Vector2>();
         if (movement.freeze)
         {
-            playerObj.forward = Vector3.Slerp(playerObj.forward, orientation.forward, rotationSpeed * Time.deltaTime);
+            playerObj.forward = Vector3.Slerp(playerObj.forward, orientation.forward, (rotationSpeed - frostDrag[movement.frostLevel]) * Time.deltaTime);
         }
-        else if (currentStyle == CameraStyle.Basic || currentStyle == CameraStyle.TopDown)
+        else if (currentStyle == CameraStyle.Basic)
         {
 
             Vector3 inputDir = orientation.forward * input.y + orientation.right * input.x;
 
             if (inputDir != Vector3.zero)
             {
-                playerObj.forward = Vector3.Slerp(playerObj.forward, inputDir.normalized, rotationSpeed * Time.deltaTime);
+                playerObj.forward = Vector3.Slerp(playerObj.forward, inputDir.normalized, (rotationSpeed - frostDrag[movement.frostLevel]) * Time.deltaTime);
             }
+            weaponController.BasicFollow(playerObj);
         }
         else if (currentStyle == CameraStyle.combat)
         {
@@ -68,6 +76,11 @@ public class CameraController : MonoBehaviour
             orientation.forward = dirToCombatLookAt.normalized;
 
             playerObj.forward = dirToCombatLookAt.normalized;
+            weaponController.FollowTarget();
+        }
+        else if(currentStyle == CameraStyle.TopDown)
+        {
+
         }
     }
 
@@ -97,5 +110,14 @@ public class CameraController : MonoBehaviour
         else if (newStyle == CameraStyle.TopDown)
             cams[2].SetActive(true);
 
+        currentStyle = newStyle;
+
+    }
+    private void AimZoomCheck()
+    {
+        if (_tpsActions.AimZoom.WasPressedThisFrame())
+            SwitchCameraStyle(CameraStyle.combat);
+        else if (_tpsActions.AimZoom.WasReleasedThisFrame())
+            SwitchCameraStyle(CameraStyle.Basic);
     }
 }

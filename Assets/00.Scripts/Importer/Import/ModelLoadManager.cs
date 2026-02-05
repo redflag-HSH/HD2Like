@@ -42,12 +42,12 @@ public class ModelLoadManager : MonoBehaviour
                 //큐브 생성
                 //프리미티브 큐브 생성
                 GameObject cubee = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cubee.transform.position = new Vector3(0, .8f, -4);
+                cubee.transform.position = new Vector3(0, .8f, 0);
                 cubee.GetComponent<Renderer>().material = _ubematerial;
                 //자식으로 모델 파일 생성
                 //print(file.Name);
                 string nameee = Path.GetFileNameWithoutExtension(file.Name);
-                ModelObject = Instantiate(Resources.Load("Models/" + nameee), new Vector3(0, .8f, -4), quaternion.identity) as GameObject;
+                ModelObject = Instantiate(Resources.Load("Models/" + nameee), new Vector3(0, .8f, 0), quaternion.identity) as GameObject;
                 //모델 파일 삭제
                 AssetDatabase.DeleteAsset("Assets/Models/" + nameee);
                 ModelObject.transform.localScale = new Vector3(5, 5, 5);

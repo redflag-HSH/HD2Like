@@ -145,6 +145,15 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AimZoom"",
+                    ""type"": ""Button"",
+                    ""id"": ""43b9cb13-b97c-4509-87ee-e9700bf42662"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -312,6 +321,17 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""action"": ""Attack"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ad3e7c12-3d78-42fb-9faa-10a100c2fef3"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AimZoom"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -326,6 +346,7 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         m_tpsDefalut_Sprint = m_tpsDefalut.FindAction("Sprint", throwIfNotFound: true);
         m_tpsDefalut_Crouch = m_tpsDefalut.FindAction("Crouch", throwIfNotFound: true);
         m_tpsDefalut_Attack = m_tpsDefalut.FindAction("Attack", throwIfNotFound: true);
+        m_tpsDefalut_AimZoom = m_tpsDefalut.FindAction("AimZoom", throwIfNotFound: true);
     }
 
     ~@TPSActions()
@@ -412,6 +433,7 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_tpsDefalut_Sprint;
     private readonly InputAction m_tpsDefalut_Crouch;
     private readonly InputAction m_tpsDefalut_Attack;
+    private readonly InputAction m_tpsDefalut_AimZoom;
     /// <summary>
     /// Provides access to input actions defined in input action map "tpsDefalut".
     /// </summary>
@@ -447,6 +469,10 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "tpsDefalut/Attack".
         /// </summary>
         public InputAction @Attack => m_Wrapper.m_tpsDefalut_Attack;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/AimZoom".
+        /// </summary>
+        public InputAction @AimZoom => m_Wrapper.m_tpsDefalut_AimZoom;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -491,6 +517,9 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @Attack.started += instance.OnAttack;
             @Attack.performed += instance.OnAttack;
             @Attack.canceled += instance.OnAttack;
+            @AimZoom.started += instance.OnAimZoom;
+            @AimZoom.performed += instance.OnAimZoom;
+            @AimZoom.canceled += instance.OnAimZoom;
         }
 
         /// <summary>
@@ -520,6 +549,9 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @Attack.started -= instance.OnAttack;
             @Attack.performed -= instance.OnAttack;
             @Attack.canceled -= instance.OnAttack;
+            @AimZoom.started -= instance.OnAimZoom;
+            @AimZoom.performed -= instance.OnAimZoom;
+            @AimZoom.canceled -= instance.OnAimZoom;
         }
 
         /// <summary>
@@ -602,5 +634,12 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnAttack(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "AimZoom" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAimZoom(InputAction.CallbackContext context);
     }
 }

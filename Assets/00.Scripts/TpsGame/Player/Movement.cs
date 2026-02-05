@@ -68,14 +68,15 @@ public class Movement : MonoBehaviour
 
     public bool restricted;
 
-    private Ledging ledgeControl;
 
     public TPSActions _actions;
     TPSActions.TpsDefalutActions _tpsActions;
     Vector2 _input;
+
+    public int frostLevel;
+    public List<float> frostDrag;
     private void Start()
     {
-        ledgeControl = GetComponent<Ledging>();
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
 
@@ -121,10 +122,6 @@ public class Movement : MonoBehaviour
             Jump();
 
             Invoke(nameof(ResetJump), jumpCooldown);
-        }
-        else if(ledgeControl.holding)
-        {
-            ledgeControl.LedgeJumpHappened = true;
         }
     }
     private void CrouchCheck()
@@ -206,7 +203,6 @@ public class Movement : MonoBehaviour
         {
             moveSpeed = desiredMoveSpeed;
         }
-        Debug.Log("desiredMoveSpeed: " + desiredMoveSpeed);
         lastDesiredMoveSpeed = desiredMoveSpeed;
     }
 
@@ -241,11 +237,7 @@ public class Movement : MonoBehaviour
     {
         if (restricted)
         {
-            if (ledgeControl.holding && _tpsActions.Move.ReadValue<Vector2>().y != 0 || _tpsActions.Move.ReadValue<Vector2>().x != 0)
-                ledgeControl.anyInputOccured = true;
-            else
-                ledgeControl.anyInputOccured = false;
-            return;
+
         }
 
         // calculate movement direction
@@ -270,7 +262,6 @@ public class Movement : MonoBehaviour
 
         // turn gravity off while on slope
         rb.useGravity = !OnSlope();
-        Debug.Log("moveSpeed: " + moveSpeed);
     }
     public void sprintCheck()
     {
@@ -294,7 +285,7 @@ public class Movement : MonoBehaviour
             // limit velocity if needed
             if (flatVel.magnitude > moveSpeed)
             {
-                Vector3 limitedVel = flatVel.normalized * moveSpeed;
+                Vector3 limitedVel = flatVel.normalized * (moveSpeed - frostDrag[(int)frostLevel]);
                 rb.linearVelocity = new Vector3(limitedVel.x, rb.linearVelocity.y, limitedVel.z);
             }
         }
