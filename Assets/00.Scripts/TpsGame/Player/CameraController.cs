@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Cinemachine;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
-    public Movement movement;
+    public static CameraController instance;
+
+    public PlayingMovement movement;
     public WeaponController weaponController;
 
     TPSActions _actions;
@@ -21,7 +20,6 @@ public class CameraController : MonoBehaviour
     public Transform playerObj;
     public Rigidbody rb;
 
-    Vector2 _input;
 
     public float rotationSpeed;
 
@@ -43,8 +41,18 @@ public class CameraController : MonoBehaviour
         _tpsActions = _actions.tpsDefalut;
         _actions.Enable();
         SwitchCameraStyle(currentStyle);
-        movement = player.GetComponent<Movement>();
-        LockM(true);
+        movement = player.GetComponent<PlayingMovement>();
+        if (instance == null)
+            instance = this;
+        else
+            Destroy(this);
+        foreach (GameObject cam in cams)
+        {
+            cam.GetComponent<CinemachineCamera>().Follow = player;
+            cam.GetComponent<CinemachineCamera>().LookAt = player;
+        }
+        cams[1].GetComponent<CinemachineCamera>().LookAt = combatLookAt;
+
     }
     private void Update()
     {
@@ -55,7 +63,7 @@ public class CameraController : MonoBehaviour
         Vector3 viewDir = player.position - new Vector3(transform.position.x, player.position.y, transform.position.z);
         orientation.forward = viewDir.normalized;
         Vector2 input = _tpsActions.Move.ReadValue<Vector2>();
-        if (movement.freeze)
+        if (movement.movementFreeze)
         {
             playerObj.forward = Vector3.Slerp(playerObj.forward, orientation.forward, (rotationSpeed - frostDrag[movement.frostLevel]) * Time.deltaTime);
         }
@@ -78,23 +86,9 @@ public class CameraController : MonoBehaviour
             playerObj.forward = dirToCombatLookAt.normalized;
             weaponController.FollowTarget();
         }
-        else if(currentStyle == CameraStyle.TopDown)
+        else if (currentStyle == CameraStyle.TopDown)
         {
 
-        }
-    }
-
-    public void LockM(bool onOff)
-    {
-        if (onOff)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-        else
-        {
-            Cursor.visible = true;
-            Cursor.lockState = CursorLockMode.None;
         }
     }
     public void SwitchCameraStyle(CameraStyle newStyle)
@@ -115,6 +109,17 @@ public class CameraController : MonoBehaviour
     }
     private void AimZoomCheck()
     {
+        if (!movement.isActiveAndEnabled)
+        {
+            SwitchCameraStyle(CameraStyle.TopDown);
+            return; 
+        } 
+        /*else if (weaponController.currentWeapon == null)
+        {
+            if (currentStyle == CameraStyle.combat)
+                SwitchCameraStyle(CameraStyle.Basic);
+            return;
+        }*/
         if (_tpsActions.AimZoom.WasPressedThisFrame())
             SwitchCameraStyle(CameraStyle.combat);
         else if (_tpsActions.AimZoom.WasReleasedThisFrame())

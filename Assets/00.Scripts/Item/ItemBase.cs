@@ -5,9 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class ItemBase : Interactor
 {
-    [SerializeField] int code;
-    [SerializeField] string Iname;
-    [SerializeField] string IDesc;
     private void Awake()
     {
         float[] aa = new float[3];
@@ -17,7 +14,7 @@ public class ItemBase : Interactor
         transform.Rotate(aa[0], aa[1], aa[2]);
         StartCoroutine(fallOff());
     }
-    public override void OnInteract()
+    public override void OnInteract(PlayingMovement m)
     {
         this.gameObject.SetActive(false);
     }
@@ -28,10 +25,6 @@ public class ItemBase : Interactor
         GetComponent<Rigidbody>().useGravity = false;
         GetComponent<Rigidbody>().linearVelocity = Vector3.zero;
         GetComponent<Rigidbody>().angularVelocity = Vector3.zero;
-    }
-    public void GetInfo(string Iname1, string Iinfo1)
-    {
-        Iname = Iname1;
-        IDesc = Iinfo1;
+        GetComponent<Rigidbody>().constraints = RigidbodyConstraints.FreezeAll;
     }
 }

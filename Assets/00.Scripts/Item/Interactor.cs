@@ -2,8 +2,13 @@ using UnityEngine;
 
 public class Interactor : MonoBehaviour
 {
-    public virtual void OnInteract()
+    public enum InteractorType
     {
-
+        item,
+        key,
+        special
     }
+    public InteractorType type;
+
+    public virtual void OnInteract(PlayingMovement m) { }
 }

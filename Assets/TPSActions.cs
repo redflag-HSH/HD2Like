@@ -154,6 +154,60 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""f79c79eb-fd07-47df-813a-40a70dbe27f7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""1"",
+                    ""type"": ""Button"",
+                    ""id"": ""42f3ccbe-4d34-47b8-8c28-d416a4fd17fb"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""2"",
+                    ""type"": ""Button"",
+                    ""id"": ""4ee17ac0-0224-4a69-a986-bf61f8614a60"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""3"",
+                    ""type"": ""Button"",
+                    ""id"": ""db05d93e-e97f-4e48-b55c-2a63d40b361d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""4"",
+                    ""type"": ""Button"",
+                    ""id"": ""0f1ecb76-1693-4ee8-9e4f-a5fba96a0af9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Discard"",
+                    ""type"": ""Button"",
+                    ""id"": ""d90d46a4-e32c-417c-b7d4-66d01a5f180a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -332,6 +386,83 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""action"": ""AimZoom"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""33715623-19ba-4762-af45-bd8ad1cc99c3"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b9380cf7-a06c-415f-8a93-2dbfdc5e96ba"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""102dbb16-2125-464f-9e8b-7487167cdae8"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e8ea93e7-e843-4056-a0d4-73e3e0905219"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""55d8071e-42d9-497d-babf-4d056771ee04"",
+                    ""path"": """",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""329068ba-36a3-44e1-bffc-d91bdc9c0072"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b62f295f-bdd7-48c7-83f1-70b78230dbd5"",
+                    ""path"": ""<Keyboard>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Discard"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -347,6 +478,12 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         m_tpsDefalut_Crouch = m_tpsDefalut.FindAction("Crouch", throwIfNotFound: true);
         m_tpsDefalut_Attack = m_tpsDefalut.FindAction("Attack", throwIfNotFound: true);
         m_tpsDefalut_AimZoom = m_tpsDefalut.FindAction("AimZoom", throwIfNotFound: true);
+        m_tpsDefalut_Interact = m_tpsDefalut.FindAction("Interact", throwIfNotFound: true);
+        m_tpsDefalut__1 = m_tpsDefalut.FindAction("1", throwIfNotFound: true);
+        m_tpsDefalut__2 = m_tpsDefalut.FindAction("2", throwIfNotFound: true);
+        m_tpsDefalut__3 = m_tpsDefalut.FindAction("3", throwIfNotFound: true);
+        m_tpsDefalut__4 = m_tpsDefalut.FindAction("4", throwIfNotFound: true);
+        m_tpsDefalut_Discard = m_tpsDefalut.FindAction("Discard", throwIfNotFound: true);
     }
 
     ~@TPSActions()
@@ -434,6 +571,12 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_tpsDefalut_Crouch;
     private readonly InputAction m_tpsDefalut_Attack;
     private readonly InputAction m_tpsDefalut_AimZoom;
+    private readonly InputAction m_tpsDefalut_Interact;
+    private readonly InputAction m_tpsDefalut__1;
+    private readonly InputAction m_tpsDefalut__2;
+    private readonly InputAction m_tpsDefalut__3;
+    private readonly InputAction m_tpsDefalut__4;
+    private readonly InputAction m_tpsDefalut_Discard;
     /// <summary>
     /// Provides access to input actions defined in input action map "tpsDefalut".
     /// </summary>
@@ -473,6 +616,30 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "tpsDefalut/AimZoom".
         /// </summary>
         public InputAction @AimZoom => m_Wrapper.m_tpsDefalut_AimZoom;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/Interact".
+        /// </summary>
+        public InputAction @Interact => m_Wrapper.m_tpsDefalut_Interact;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/_1".
+        /// </summary>
+        public InputAction @_1 => m_Wrapper.m_tpsDefalut__1;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/_2".
+        /// </summary>
+        public InputAction @_2 => m_Wrapper.m_tpsDefalut__2;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/_3".
+        /// </summary>
+        public InputAction @_3 => m_Wrapper.m_tpsDefalut__3;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/_4".
+        /// </summary>
+        public InputAction @_4 => m_Wrapper.m_tpsDefalut__4;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/Discard".
+        /// </summary>
+        public InputAction @Discard => m_Wrapper.m_tpsDefalut_Discard;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -520,6 +687,24 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @AimZoom.started += instance.OnAimZoom;
             @AimZoom.performed += instance.OnAimZoom;
             @AimZoom.canceled += instance.OnAimZoom;
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
+            @_1.started += instance.On_1;
+            @_1.performed += instance.On_1;
+            @_1.canceled += instance.On_1;
+            @_2.started += instance.On_2;
+            @_2.performed += instance.On_2;
+            @_2.canceled += instance.On_2;
+            @_3.started += instance.On_3;
+            @_3.performed += instance.On_3;
+            @_3.canceled += instance.On_3;
+            @_4.started += instance.On_4;
+            @_4.performed += instance.On_4;
+            @_4.canceled += instance.On_4;
+            @Discard.started += instance.OnDiscard;
+            @Discard.performed += instance.OnDiscard;
+            @Discard.canceled += instance.OnDiscard;
         }
 
         /// <summary>
@@ -552,6 +737,24 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @AimZoom.started -= instance.OnAimZoom;
             @AimZoom.performed -= instance.OnAimZoom;
             @AimZoom.canceled -= instance.OnAimZoom;
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
+            @_1.started -= instance.On_1;
+            @_1.performed -= instance.On_1;
+            @_1.canceled -= instance.On_1;
+            @_2.started -= instance.On_2;
+            @_2.performed -= instance.On_2;
+            @_2.canceled -= instance.On_2;
+            @_3.started -= instance.On_3;
+            @_3.performed -= instance.On_3;
+            @_3.canceled -= instance.On_3;
+            @_4.started -= instance.On_4;
+            @_4.performed -= instance.On_4;
+            @_4.canceled -= instance.On_4;
+            @Discard.started -= instance.OnDiscard;
+            @Discard.performed -= instance.OnDiscard;
+            @Discard.canceled -= instance.OnDiscard;
         }
 
         /// <summary>
@@ -641,5 +844,47 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnAimZoom(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void On_1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void On_2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void On_3(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void On_4(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Discard" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDiscard(InputAction.CallbackContext context);
     }
 }

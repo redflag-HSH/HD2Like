@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -9,44 +10,88 @@ public class PlayerStat : Entity
     public float frostbite;
     public bool frosting;
     public float Warmth;
-    public Material overlapMat;
+    [SerializeField] private int frostDamageCircle;
+    private bool frostbiteDamageCan;
+    private int freezeDamage = 1;
+
+    public Material frostbiteOverlapMat;
+    public Material bloodOverlapMat;
     public List<float> levelGates;
     //체력은 entity걸로
-
-    //스테미너
-    float stamina;
     //동상 단계에 따른 관성 및 이동속도 디버프 정보
     float frostDrag;
     float moveFrost;
+
+    bool isAlive;
+    private void Start()
+    {
+        isAlive = true;
+        frostbiteDamageCan = true;
+    }
     private void Update()
     {
-        FrostBiteAdvance();
+        if (isAlive)
+            FrostBiteAdvance();
     }
     public void FrostBiteAdvance()
     {
+        if (frostbite >= 150)
+        {
+            FreezeDamage();
+            return;
+        }
         if (frosting)
             frostbite += Time.deltaTime;
         else
             Warmth -= Time.deltaTime;
         if (Warmth <= 0)
             frosting = true;
-        overlapMat.SetFloat("_vignettePow", 12 - frostbite / 10);
+        frostbiteOverlapMat.SetFloat("_vignettePow", 15 - frostbite / 10);
         for (int i = 0; i < levelGates.Count; i++)
             if (frostbite < levelGates[i])
             {
-                GetComponent<Movement>().frostLevel = i - 1;
+                GetComponent<PlayingMovement>().frostLevel = i - 1;
                 break;
             }
     }
-
-
-    public override void Damage(int i)
+    public void FreezeDamage()
     {
-        base.Damage(i);
+        if (frostbiteDamageCan)
+        {
+            this.Damage(freezeDamage, damageType.freeze);
+            StartCoroutine(FrostDamageDelay());
+        }
+    }
+
+    public override void Damage(int i, damageType type)
+    {
+        base.Damage(i, type);
+        Debug.Log("player damage");
+        bloodOverlapMat.SetFloat("_vignettePow", 15 * (health / maxHealth));
+    }
+    public void Heal(int pow)
+    {
+        health += pow;
+        if (health > maxHealth)
+            health = maxHealth;
+        bloodOverlapMat.SetFloat("_vignettePow", 15 * (health / maxHealth));
     }
     protected override void Death()
     {
         base.Death();
         //관전모드로 돌리기
+        GetComponent<PlayingMovement>().enabled = false;
+        CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.TopDown);
+    }
+    IEnumerator FrostDamageDelay()
+    {
+        frostbiteDamageCan = false;
+        yield return new WaitForSeconds(frostDamageCircle);
+        frostbiteDamageCan = true;
+    }
+    private void OnDisable()
+    {
+        bloodOverlapMat.SetFloat("_vignettePow", 15 );
+        frostbiteOverlapMat.SetFloat("_vignettePow", 15);
     }
 }
