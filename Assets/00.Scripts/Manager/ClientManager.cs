@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -26,7 +27,7 @@ public class ClientManager : MonoBehaviour
     }
     public void OnSceneLoaded(Scene scene, LoadSceneMode loadMode)
     {
-        if(scene.name=="")
+        if (scene.name == "")
         {
             LockM(true);
         }
@@ -35,8 +36,17 @@ public class ClientManager : MonoBehaviour
     {
         SceneManager.LoadScene(name);
     }
+    public void LoadSceneNetwork(string name)
+    {
+        NetworkManager.Singleton.SceneManager.LoadScene(name, LoadSceneMode.Single);
+    }
     public void Quit()
     {
         Application.Quit();
     }
+    /* public void Test()
+     {
+         network
+         ClientManager
+     }*/
 }

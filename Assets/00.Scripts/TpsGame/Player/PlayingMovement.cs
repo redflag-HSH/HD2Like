@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using TMPro.Examples;
 using Unity.Netcode;
 using UnityEngine;
@@ -50,7 +51,6 @@ public class PlayingMovement : NetworkBehaviour
 
     public TPSActions _actions;
     TPSActions.TpsDefalutActions _tpsActions;
-    Vector2 _input;
 
     public int frostLevel;
     public List<float> frostDrag;
@@ -61,6 +61,9 @@ public class PlayingMovement : NetworkBehaviour
     List<Weapon> weapons;
 
     bool owner = false;
+
+    [SerializeField] TextMeshPro _indicatorText;
+
 
     private void Start()
     {
@@ -87,8 +90,9 @@ public class PlayingMovement : NetworkBehaviour
 
 
         StartInitialize();
+
         base.OnNetworkSpawn();
-        StartCoroutine(RPCCall());
+        //StartCoroutine(RPCCall());
     }
     IEnumerator RPCCall()
     {
@@ -96,6 +100,12 @@ public class PlayingMovement : NetworkBehaviour
         a.player = this;
         yield return new WaitForEndOfFrame();
         MultiManager.instance.playerMatGetServerRpc(a.GetPlayerMat());
+    }
+
+
+    public void NetworkInitilize()
+    {
+        
     }
 
 
@@ -115,8 +125,8 @@ public class PlayingMovement : NetworkBehaviour
         _actions = new TPSActions();
         _actions.Enable();
         _tpsActions = _actions.tpsDefalut;
-        //performed는 relase
-        //started는 pressed
+        //performed= relase
+        //started= pressed
         _tpsActions.Attack.performed += ctx => AttackTrigger();
         _tpsActions.Interact.performed += ctx => InteractTry();
         _tpsActions._1.performed += ctx => ChangeWeapon(0);
@@ -188,16 +198,17 @@ public class PlayingMovement : NetworkBehaviour
         {
             if (collider.TryGetComponent<Interactor>(out Interactor t))
             {
-                //ui띄우기
-
-                //상호작용 가능 오브젝트에 할당
+                IndicatorTextChange(t.GetText());
                 canInteractor = t;
                 isThereaInteractor = true;
                 break;
             }
         }
         if (!isThereaInteractor)
+        {
             canInteractor = null;
+            IndicatorTextChange("");
+        }
     }
     private void InteractTry()
     {
@@ -261,5 +272,10 @@ public class PlayingMovement : NetworkBehaviour
     public void MatSet(Color c)
     {
         plaObj.GetComponent<Renderer>().material.color = c;
+    }
+
+    public void IndicatorTextChange(string text)
+    {
+        _indicatorText.text = text;
     }
 }

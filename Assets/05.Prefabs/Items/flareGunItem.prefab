@@ -75,6 +75,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
+  _text: "\uD50C\uB808\uC5B4\uAC74"
   WeaponOBJ: {fileID: 81470648008549140, guid: 54a60f4c123e5c548ba7065c539c14af, type: 3}
   LeftAmmo: 0
 --- !u!65 &6794763010026141397

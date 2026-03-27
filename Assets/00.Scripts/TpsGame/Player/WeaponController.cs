@@ -74,10 +74,10 @@ public class WeaponController : MonoBehaviour
                 transform.rotation = Quaternion.Lerp(transform.rotation, rotation, dragge);
             }
         }
-        else
+        /*else
         {
             weaponTrans.rotation=Quaternion.Euler(0f, 0f, 0f);
-        }
+        }*/
     }
     public void BasicFollow(Transform forw)
     {

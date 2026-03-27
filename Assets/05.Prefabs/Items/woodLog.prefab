@@ -130,9 +130,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
-  code: 0
-  Iname: woodLogs
-  IDesc: woodLogsforMaterial
+  _text: "\uB098\uBB34\uB354\uBBF8"
 --- !u!65 &1364813594009872798
 BoxCollider:
   m_ObjectHideFlags: 0

@@ -47,6 +47,13 @@ public class MultiManager : NetworkBehaviour
     public void NewOnesLoadPlayersRPC()
     {
         //신규일경우
+        //서버에서 받기
+        if(((int)this.OwnerClientId)==players.Count)
+        {
+
+        }
+        //클라이언트에서 받기
+
         //기존 리스트받고 loadplayersrpc
 
     }

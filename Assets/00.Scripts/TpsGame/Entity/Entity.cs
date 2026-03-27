@@ -11,14 +11,15 @@ public class Entity : MonoBehaviour
         explosion,
         freeze
     }
+    public int GetHealth() { return health; }
     protected virtual void Awake()
     {
         health = maxHealth;
     }
-    public virtual void Damage(int i,damageType type)
+    public virtual void Damage(int i, damageType type)
     {
         health -= i;
-        if(health <= 0)
+        if (health <= 0)
             Death();
     }
     protected virtual void Death()

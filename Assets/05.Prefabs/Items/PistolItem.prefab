@@ -123,6 +123,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 0
+  _text: "\uB9AC\uBCFC\uBC84"
   WeaponOBJ: {fileID: 3676558216411347422, guid: f63d47b0b7478d740994b1e704feafdc, type: 3}
   LeftAmmo: -1
 --- !u!54 &8647859599948682058
