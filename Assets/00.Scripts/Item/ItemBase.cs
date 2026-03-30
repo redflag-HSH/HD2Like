@@ -8,7 +8,7 @@ public class ItemBase : Interactor
     private void Awake()
     {
         float[] aa = new float[3];
-        //·£´ýÇÏ°Ô È¸ÀüÇÏ´Â ÇÔ¼ö
+        //ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ È¸ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½Ô¼ï¿½
         for (int j = 0; j < 3; j++)
             aa[j] = Random.Range(-30.0f, 31.0f);
         transform.Rotate(aa[0], aa[1], aa[2]);
@@ -16,7 +16,10 @@ public class ItemBase : Interactor
     }
     public override void OnInteract(PlayingMovement m)
     {
-        this.gameObject.SetActive(false);
+        if (TryGetComponent<NetworkDespawner>(out var nd) && nd.IsSpawned)
+            nd.DespawnServerRpc();
+        else
+            gameObject.SetActive(false);
     }
     IEnumerator fallOff()
     {

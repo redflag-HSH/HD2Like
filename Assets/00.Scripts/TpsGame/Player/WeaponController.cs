@@ -30,7 +30,12 @@ public class WeaponController : MonoBehaviour
         MeeleChecking();
     }
 
-    [Header("¸Å°³º¯¼ö")]
+    [Header("Weapon Display (for other clients)")]
+    [SerializeField] public List<GameObject> weaponDisplayPrefabs;
+    // Assign the hand bone / weapon socket here. Falls back to this transform if left empty.
+    public Transform weaponDisplayTarget;
+
+    [Header("ë“œë˜ê¹…")]
     public float DraggingPow;
 
     private void AmmoCheck()
@@ -47,7 +52,7 @@ public class WeaponController : MonoBehaviour
             return;
         if (currentWeapon.type == Weapon.weaponType.shooter)
         {
-            //¾îÅÃ Æ÷ÀÎÆ®¿¡ ÃÑ¾Ë »ı¼º
+            //ì‚¬ê²© í¬ì¸íŠ¸ì— ì´ì•Œ ìƒì„±
             currentWeapon.Shoot();
             AmmoCheck();
         }
@@ -63,21 +68,17 @@ public class WeaponController : MonoBehaviour
         {
             Vector2 screenPoint = new Vector2(Screen.width / 2, Screen.height / 2);
             Ray ray = Camera.main.ScreenPointToRay(screenPoint);
-            //·¹ÀÌÄ³½ºÆ®
+            //ë ˆì´ìºìŠ¤íŠ¸
             if (Physics.Raycast(ray, out RaycastHit hitInfo, 999f, aimMask))
             {
                 Vector3 relativePos = hitInfo.point - weaponTrans.position;
                 Quaternion rotation = Quaternion.LookRotation(relativePos, Vector3.up);
-                //°ü¼º ÆÄ¿ö-µ¿»óÁ¤µµ
+                //ì•½ê°„ ë’¤ì—-ë¶€ë“œëŸ½ê²Œ
                 float dragge = Time.deltaTime * (DraggingPow - frostDrag[GetComponentInParent<PlayingMovement>().frostLevel]);
                 weaponTrans.rotation = Quaternion.Lerp(weaponTrans.rotation, rotation, dragge);
                 transform.rotation = Quaternion.Lerp(transform.rotation, rotation, dragge);
             }
         }
-        /*else
-        {
-            weaponTrans.rotation=Quaternion.Euler(0f, 0f, 0f);
-        }*/
     }
     public void BasicFollow(Transform forw)
     {

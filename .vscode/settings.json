@@ -67,5 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "HD2Like.slnx"
+    "dotnet.defaultSolution": "HD2Like.slnx",
+    "dotnet.preferCSharpExtension": true
 }

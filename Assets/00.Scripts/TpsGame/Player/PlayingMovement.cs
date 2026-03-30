@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using TMPro.Examples;
 using Unity.Netcode;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -59,10 +60,15 @@ public class PlayingMovement : NetworkBehaviour
 
     [Header("inventory")]
     List<Weapon> weapons;
+    List<int> weaponPrefabIndices; // parallel to weapons, stores weaponItem.weaponPrefabIndex
 
     bool owner = false;
 
     [SerializeField] TextMeshPro _indicatorText;
+
+    // Server-side reference to the currently spawned display weapon NetworkObject.
+    // NGO replicates it automatically to all clients; owner is hidden via NetworkHide.
+    NetworkObject _displayWeaponNetObj;
 
 
     private void Start()
@@ -77,48 +83,41 @@ public class PlayingMovement : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
+        controller = GetComponentInChildren<WeaponController>();
+
         if (IsOwner)
         {
             owner = true;
             Debug.Log("owner is " + OwnerClientId);
+            StartInitialize();
         }
         else
         {
             Debug.Log("You're not owner of " + OwnerClientId);
-            return;
         }
 
-
-        StartInitialize();
-
         base.OnNetworkSpawn();
-        //StartCoroutine(RPCCall());
-    }
-    IEnumerator RPCCall()
-    {
-        playerCustom a = FindFirstObjectByType<playerCustom>();
-        a.player = this;
-        yield return new WaitForEndOfFrame();
-        MultiManager.instance.playerMatGetServerRpc(a.GetPlayerMat());
     }
 
 
     public void NetworkInitilize()
     {
-        
+
     }
 
 
     public void StartInitialize()
     {
+        GetComponent<playerCustom>().SetRandomColor();
+
         controller = GetComponentInChildren<WeaponController>();
 
         CamReferenceSet();
 
         _characterController = GetComponent<CharacterController>();
 
-
         weapons = new List<Weapon>();
+        weaponPrefabIndices = new List<int>();
 
         _playerVelocity = Vector3.zero;
 
@@ -150,7 +149,6 @@ public class PlayingMovement : NetworkBehaviour
     {
         if (!owner)
             return;
-        // Debug.Log(_tpsActions.Move.ReadValue<Vector2>());
         ProcessMove(_tpsActions.Move.ReadValue<Vector2>());
         InteractCheck();
     }
@@ -218,7 +216,7 @@ public class PlayingMovement : NetworkBehaviour
             canInteractor = null;
         }
     }
-    public void AddWeapon(Weapon weapon, int ammo)
+    public void AddWeapon(Weapon weapon, int ammo, int prefabIndex = -1)
     {
         if (weapons.Count < 4)
         {
@@ -240,24 +238,29 @@ public class PlayingMovement : NetworkBehaviour
                 weapon.transform.SetParent(controller.meeleTransform, true);
             }
             weapons.Add(weapon);
+            weaponPrefabIndices.Add(prefabIndex);
         }
         weapon.gameObject.SetActive(false);
     }
     public void RemoveWeapon(Weapon weapon)
     {
-        foreach (Weapon weapon1 in weapons)
+        int idx = weapons.IndexOf(weapon);
+        if (idx >= 0)
         {
-            if (weapon1 == weapon)
-            {
-                weapons.Remove(weapon1);
-                break;
-            }
+            weapons.RemoveAt(idx);
+            weaponPrefabIndices.RemoveAt(idx);
+            if (controller.currentWeapon == weapon && IsSpawned)
+                SpawnDisplayWeaponServerRpc(-1);
         }
     }
     public void ChangeWeapon(int num)
     {
-        if (weapons[num] != null)
+        if (num < weapons.Count && weapons[num] != null)
+        {
             controller.ChangeWeapon(weapons[num]);
+            if (IsSpawned && num < weaponPrefabIndices.Count)
+                SpawnDisplayWeaponServerRpc(weaponPrefabIndices[num]);
+        }
     }
     public void Discard()
     {
@@ -265,7 +268,37 @@ public class PlayingMovement : NetworkBehaviour
         {
             controller.currentWeapon.Discard();
             controller.ChangeWeapon();
+            if (IsSpawned)
+                SpawnDisplayWeaponServerRpc(-1);
         }
+    }
+
+    // Runs on the server. Despawns the old display weapon and spawns a new one
+    // parented to the weapon display target. The owner client is hidden from seeing
+    // it (they already see their local weapon).
+    [ServerRpc]
+    void SpawnDisplayWeaponServerRpc(int prefabIndex)
+    {
+        if (_displayWeaponNetObj != null)
+        {
+            _displayWeaponNetObj.Despawn();
+            _displayWeaponNetObj = null;
+        }
+
+        if (prefabIndex < 0 || prefabIndex >= controller.weaponDisplayPrefabs.Count)
+            return;
+
+        Transform spawnOn = controller.weaponDisplayTarget != null
+            ? controller.weaponDisplayTarget
+            : controller.transform;
+
+        GameObject go = Instantiate(controller.weaponDisplayPrefabs[prefabIndex]);
+        _displayWeaponNetObj = go.GetComponent<NetworkObject>();
+        _displayWeaponNetObj.Spawn();
+        _displayWeaponNetObj.TrySetParent(spawnOn, false); // false = keep local position (zeroed)
+
+        // Hide from owner — they see their own local weapon instance
+        _displayWeaponNetObj.NetworkHide(OwnerClientId);
     }
 
 

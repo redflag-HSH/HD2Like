@@ -397,6 +397,11 @@ MonoBehaviour:
   currentWeapon: {fileID: 0}
   meeleTransform: {fileID: 3372666293728252599}
   AttackCoolSet: 0
+  weaponDisplayPrefabs:
+  - {fileID: 59900267446587380, guid: ea029f21cf710f04badae1182b799a86, type: 3}
+  - {fileID: 3676558216411347422, guid: f63d47b0b7478d740994b1e704feafdc, type: 3}
+  - {fileID: 81470648008549140, guid: 54a60f4c123e5c548ba7065c539c14af, type: 3}
+  weaponDisplayTarget: {fileID: 5804759813251757276}
   DraggingPow: 3
 --- !u!114 &1836822219763659789
 MonoBehaviour:
@@ -459,6 +464,7 @@ GameObject:
   - component: {fileID: 3756147400444534171}
   - component: {fileID: 7044787481818513765}
   - component: {fileID: 4062782547367724211}
+  - component: {fileID: 145085943905023077}
   m_Layer: 10
   m_Name: Player
   m_TagString: Player
@@ -655,6 +661,20 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &145085943905023077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2633717147026377772}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58ff33b467ded6347a92ad83d3118386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  targetRenderer: {fileID: 0}
 --- !u!1 &3171146412813097432
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,27 +1,56 @@
 using Unity.Netcode;
 using UnityEngine;
 
-public class playerCustom : MonoBehaviour
+public class playerCustom : NetworkBehaviour
 {
-    NetworkVariable<Color> playerColor = new NetworkVariable<Color>(Color.white, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    Color plaColor;
-    public PlayingMovement player;
+    NetworkVariable<Color> playerColor = new NetworkVariable<Color>(
+        Color.white,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner
+    );
 
-    private void Awake()
+    [SerializeField] Renderer targetRenderer;
+
+    public override void OnNetworkSpawn()
     {
-        plaColor = Color.white;
+        if (targetRenderer == null)
+            targetRenderer = GetComponentInChildren<Renderer>();
+
+        playerColor.OnValueChanged += OnColorChanged;
+
+        if (IsOwner)
+            playerColor.Value = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+
+        ApplyColor(playerColor.Value);
+
+        base.OnNetworkSpawn();
     }
+
+    public override void OnNetworkDespawn()
+    {
+        playerColor.OnValueChanged -= OnColorChanged;
+        base.OnNetworkDespawn();
+    }
+
+    private void OnColorChanged(Color previous, Color current)
+    {
+        ApplyColor(current);
+    }
+
+    private void ApplyColor(Color c)
+    {
+        if (targetRenderer != null)
+            targetRenderer.material.color = c;
+    }
+
     public void SetRandomColor()
     {
-        plaColor = new Color(Random.Range(0, 1f), Random.Range(0, 1f), Random.Range(0, 1f));
-        //playerColor.Value = plaColor;
+        if (!IsOwner) return;
+        playerColor.Value = new Color(Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
     }
-    public void SetPlayerMat(Renderer r)
+
+    public Color GetPlayerColor()
     {
-        r.material.color = plaColor;
-    }
-    public Color GetPlayerMat()
-    {
-        return plaColor;
+        return playerColor.Value;
     }
 }
