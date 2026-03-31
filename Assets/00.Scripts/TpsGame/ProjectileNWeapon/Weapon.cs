@@ -20,6 +20,7 @@ public class Weapon : MonoBehaviour
     public Transform attackPoint;
     public float MeeleRadius = .2f;
     [SerializeField] GameObject projectile;
+    public int projectilePrefabIndex = -1;
     public GameObject weaponModel;
 
     public void AmmoReset(int ammo)
@@ -38,7 +39,11 @@ public class Weapon : MonoBehaviour
         if (!canAttack)
             return;
         LeftAmmo--;
-        Instantiate(projectile, attackPoint.position, attackPoint.transform.rotation).GetComponent<Projectile>().SetDamage(damage);
+        PlayingMovement pm = GetComponentInParent<PlayingMovement>();
+        if (pm != null && pm.IsSpawned)
+            pm.SpawnProjectileServerRpc(attackPoint.position, attackPoint.rotation, damage, projectilePrefabIndex);
+        else
+            Instantiate(projectile, attackPoint.position, attackPoint.transform.rotation).GetComponent<Projectile>().SetDamage(damage);
         StartCoroutine(wait());
     }
     public void Discard()

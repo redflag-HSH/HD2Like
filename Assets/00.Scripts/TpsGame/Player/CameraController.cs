@@ -34,28 +34,33 @@ public class CameraController : MonoBehaviour
         TopDown
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         _actions = new TPSActions();
         _tpsActions = _actions.tpsDefalut;
         _actions.Enable();
         SwitchCameraStyle(currentStyle);
-        movement = player.GetComponent<PlayingMovement>();
+
         if (instance == null)
             instance = this;
         else
             Destroy(this);
+    }
+
+    // Called by PlayingMovement.CamReferenceSet() after all references are assigned
+    public void SetupPlayerReferences()
+    {
+        movement = player.GetComponent<PlayingMovement>();
         foreach (GameObject cam in cams)
         {
             cam.GetComponent<CinemachineCamera>().Follow = player;
             cam.GetComponent<CinemachineCamera>().LookAt = player;
         }
         cams[1].GetComponent<CinemachineCamera>().LookAt = combatLookAt;
-
     }
     private void Update()
     {
+        if (movement == null) return;
 
         AimZoomCheck();
 
@@ -112,8 +117,8 @@ public class CameraController : MonoBehaviour
         if (!movement.isActiveAndEnabled)
         {
             SwitchCameraStyle(CameraStyle.TopDown);
-            return; 
-        } 
+            return;
+        }
         /*else if (weaponController.currentWeapon == null)
         {
             if (currentStyle == CameraStyle.combat)

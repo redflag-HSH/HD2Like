@@ -39,7 +39,7 @@ public class FlareProjectile : Projectile
         _light.GetComponent<FlareLightFlicker>().enabled = false;
         _light.GetComponent<LightFade>().FadeStart();
         Debug.Log("flare disable");
-        gameObject.SetActive(false);
+        DestroyProjectile();
     }
     private void SkyLevelCheck()
     {

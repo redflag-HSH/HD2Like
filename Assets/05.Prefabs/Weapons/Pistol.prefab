@@ -79,9 +79,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  GlobalObjectIdHash: 0
+  m_Name: 
+  m_EditorClassIdentifier: 
+  GlobalObjectIdHash: 1955884395
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -120,10 +120,11 @@ MonoBehaviour:
   MaxAmmo: 6
   itemObject: {fileID: 2263187795971025679, guid: 2a567f02f5b5bdc46b5654dc709bdc61, type: 3}
   LeftAmmo: 0
-  type: 0
+  type: 1
   attackPoint: {fileID: 3158580122166667950}
   MeeleRadius: 0
   projectile: {fileID: 4863595348090036259, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
+  projectilePrefabIndex: 0
   weaponModel: {fileID: 8758467538763449431}
 --- !u!114 &-6959657428818380496
 MonoBehaviour:

@@ -6,6 +6,7 @@ using Unity.Netcode;
 using UnityEditor.PackageManager;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 public class PlayingMovement : NetworkBehaviour
 {
@@ -58,6 +59,9 @@ public class PlayingMovement : NetworkBehaviour
 
     public Interactor canInteractor;
 
+    [Header("Projectiles")]
+    [SerializeField] public List<GameObject> projectilePrefabs;
+
     [Header("inventory")]
     List<Weapon> weapons;
     List<int> weaponPrefabIndices; // parallel to weapons, stores weaponItem.weaponPrefabIndex
@@ -90,6 +94,7 @@ public class PlayingMovement : NetworkBehaviour
             owner = true;
             Debug.Log("owner is " + OwnerClientId);
             StartInitialize();
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnNetworkSceneLoaded;
         }
         else
         {
@@ -97,6 +102,18 @@ public class PlayingMovement : NetworkBehaviour
         }
 
         base.OnNetworkSpawn();
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (IsOwner)
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnNetworkSceneLoaded;
+        base.OnNetworkDespawn();
+    }
+
+    void OnNetworkSceneLoaded(string sceneName, LoadSceneMode loadMode, List<ulong> clientsCompleted, List<ulong> clientsTimedOut)
+    {
+        CamReferenceSet();
     }
 
 
@@ -155,8 +172,12 @@ public class PlayingMovement : NetworkBehaviour
 
     public void CamReferenceSet()
     {
-        CameraController cont;
-        cont = FindFirstObjectByType<CameraController>();
+        CameraController cont = FindFirstObjectByType<CameraController>();
+        if (cont == null)
+        {
+            Debug.LogWarning("CamReferenceSet: CameraController not found in scene");
+            return;
+        }
         cont.playerObj = plaObj;
         cont.player = gameObject.transform;
         cont.orientation = orientation;
@@ -164,6 +185,7 @@ public class PlayingMovement : NetworkBehaviour
         cont.combatLookAt = combatLookat;
         cont.weaponController = controller;
         cont.enabled = true;
+        cont.SetupPlayerReferences();
     }
 
 
@@ -271,6 +293,16 @@ public class PlayingMovement : NetworkBehaviour
             if (IsSpawned)
                 SpawnDisplayWeaponServerRpc(-1);
         }
+    }
+
+    [ServerRpc]
+    public void SpawnProjectileServerRpc(Vector3 pos, Quaternion rot, int damage, int prefabIndex)
+    {
+        if (prefabIndex < 0 || prefabIndex >= projectilePrefabs.Count) return;
+        GameObject go = Instantiate(projectilePrefabs[prefabIndex], pos, rot);
+        NetworkObject no = go.GetComponent<NetworkObject>();
+        no.Spawn();
+        go.GetComponent<Projectile>().SetDamage(damage);
     }
 
     // Runs on the server. Despawns the old display weapon and spawns a new one

@@ -1,6 +1,7 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class Projectile : MonoBehaviour
+public class Projectile : NetworkBehaviour
 {
     [SerializeField] bool _special;
     [SerializeField] bool _gravityPerform;
@@ -17,8 +18,8 @@ public class Projectile : MonoBehaviour
             _GravityMultiplyByTime += Time.deltaTime / 2;
             transform.position += new Vector3(0, _GravityMultiplyByTime * (-9.8f * Time.deltaTime / _gravityDivider), 0);
             _lifeTime += Time.deltaTime;
-            if (_lifeTime > 30)
-                gameObject.SetActive(false);
+            if (_lifeTime > 30 && (IsServer || !IsSpawned))
+                DestroyProjectile();
         }
     }
     public void SetDamage(int damage)
@@ -28,7 +29,7 @@ public class Projectile : MonoBehaviour
     protected virtual void Update()
     {
         Perform();
-        if (!_special)
+        if (!_special && (IsServer || !IsSpawned))
             CheckCollide();
     }
     public void CheckCollide()
@@ -39,8 +40,16 @@ public class Projectile : MonoBehaviour
             if (col.TryGetComponent<Entity>(out Entity t))
             {
                 t.Damage(_damage, Entity.damageType.bullet);
-                gameObject.SetActive(false);
+                DestroyProjectile();
+                return;
             }
         }
+    }
+    protected void DestroyProjectile()
+    {
+        if (IsSpawned)
+            GetComponent<NetworkObject>().Despawn();
+        else
+            gameObject.SetActive(false);
     }
 }
