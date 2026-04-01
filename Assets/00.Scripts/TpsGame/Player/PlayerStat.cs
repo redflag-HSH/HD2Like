@@ -2,11 +2,11 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerStat : Entity
+public class PlayerStat : HealthEntity
 {
-    //µ¿»ó Á¤µµ
-    //µ¿»ó¿¡ µû¶ó ÇÃ·¹ÀÌ¾îÀÇ °ü¼º ¹× ÀÌµ¿¼Óµµ µð¹öÇÁ Áõ°¡
-    //µ¿»ó ÁøÇà ¼öÁØÀÌ ÀÏÁ¤ ¼öÁØ ÀÌ»óÀÏ °æ¿ì Á¡Â÷ Ã¼·Â °¨¼Ò
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì»ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã¼ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     public float frostbite;
     public bool frosting;
     public float Warmth;
@@ -17,8 +17,8 @@ public class PlayerStat : Entity
     public Material frostbiteOverlapMat;
     public Material bloodOverlapMat;
     public List<float> levelGates;
-    //Ã¼·ÂÀº entity°É·Î
-    //µ¿»ó ´Ü°è¿¡ µû¸¥ °ü¼º ¹× ÀÌµ¿¼Óµµ µð¹öÇÁ Á¤º¸
+    //Ã¼ï¿½ï¿½ï¿½ï¿½ entityï¿½É·ï¿½
+    //ï¿½ï¿½ï¿½ï¿½ ï¿½Ü°è¿¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ìµï¿½ï¿½Óµï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     float frostDrag;
     float moveFrost;
 
@@ -58,16 +58,26 @@ public class PlayerStat : Entity
     {
         if (frostbiteDamageCan)
         {
-            this.Damage(freezeDamage, damageType.freeze);
+            this.Damage(freezeDamage, IDamageable.DamageType.freeze);
             StartCoroutine(FrostDamageDelay());
         }
     }
 
-    public override void Damage(int i, damageType type)
+    public override void Damage(int i, IDamageable.DamageType type)
     {
         base.Damage(i, type);
+        if (health <= 0) return; // death RPC already handles the overlay reset
         Debug.Log("player damage");
-        bloodOverlapMat.SetFloat("_vignettePow", 15 * (health / maxHealth));
+        PlayingMovement pm = GetComponent<PlayingMovement>();
+        float vignetteValue = 15f * health / maxHealth;
+        if (pm != null && pm.IsSpawned)
+            pm.ShowBloodOverlayClientRpc(vignetteValue);
+        else
+            bloodOverlapMat.SetFloat("_vignettePow", vignetteValue);
+    }
+    public void ApplyBloodOverlay(float value)
+    {
+        bloodOverlapMat.SetFloat("_vignettePow", value);
     }
     public void Heal(int pow)
     {
@@ -78,10 +88,11 @@ public class PlayerStat : Entity
     }
     protected override void Death()
     {
-        base.Death();
-        //°üÀü¸ðµå·Î µ¹¸®±â
-        GetComponent<PlayingMovement>().enabled = false;
-        CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.TopDown);
+        PlayingMovement pm = GetComponent<PlayingMovement>();
+        if (pm.IsSpawned)
+            pm.DieClientRpc();
+        else
+            pm.OnDeath(); // fallback for offline/test mode
     }
     IEnumerator FrostDamageDelay()
     {
@@ -91,7 +102,7 @@ public class PlayerStat : Entity
     }
     private void OnDisable()
     {
-        bloodOverlapMat.SetFloat("_vignettePow", 15 );
+        bloodOverlapMat.SetFloat("_vignettePow", 15);
         frostbiteOverlapMat.SetFloat("_vignettePow", 15);
     }
 }

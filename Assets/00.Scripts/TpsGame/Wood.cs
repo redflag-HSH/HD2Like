@@ -1,19 +1,19 @@
 using UnityEngine;
 
-public class Wood : Entity
+public class Wood : HealthEntity
 {
     public GameObject wood;
-    public override void Damage(int i, damageType type)
+    public override void Damage(int i, IDamageable.DamageType type)
     {
-        if (type == damageType.meele)
+        if (type == IDamageable.DamageType.meele)
             base.Damage(i, type);
     }
     protected override void Death()
     {
         base.Death();
-        //¾Ö´Ï¸ÞÀÌ¼Ç Àç»ý
+        //ï¿½Ö´Ï¸ï¿½ï¿½Ì¼ï¿½ ï¿½ï¿½ï¿½
 
-        //¾ÆÀÌÅÛ »ý¼º
+        //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
         Instantiate(wood, transform.position, transform.rotation);
         //ItemManager.instance.ItemGenerate(transform.position, 0, 1);
         Destroy(gameObject);

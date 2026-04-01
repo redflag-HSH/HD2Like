@@ -1,7 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 
-public class Fence : Entity
+public class Fence : HealthEntity
 {
     public GameObject[] fenceWires;
 
@@ -9,9 +9,9 @@ public class Fence : Entity
     {
         base.Awake();
     }
-    public override void Damage(int i, damageType type)
+    public override void Damage(int i, IDamageable.DamageType type)
     {
-        if (type == damageType.meele)
+        if (type == IDamageable.DamageType.meele)
         {
             Debug.Log("fence Damaged");
             base.Damage(i, type);

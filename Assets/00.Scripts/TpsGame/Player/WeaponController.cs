@@ -10,18 +10,18 @@ public class WeaponController : MonoBehaviour
     public List<float> frostDrag;
     public Weapon currentWeapon;
     public Transform meeleTransform;
-    Entity _player;
+    HealthEntity _player;
     PlayingMovement _playerMovement;
 
     bool meeleAttacking;
-    List<Entity> attackedEntis;
+    List<HealthEntity> attackedEntis;
 
     public float AttackCoolSet;
 
     private void Awake()
     {
-        attackedEntis = new List<Entity>();
-        _player = GetComponentInParent<PlayerStat>();
+        attackedEntis = new List<HealthEntity>();
+        _player = GetComponentInParent<HealthEntity>();
         _playerMovement = GetComponentInParent<PlayingMovement>();
     }
 
@@ -86,28 +86,33 @@ public class WeaponController : MonoBehaviour
     }
     private void MeeleChecking()
     {
-        if (meeleAttacking)
+        if (!meeleAttacking) return;
+        // Only the weapon owner sends damage — prevents double-hits from all clients
+        if (_playerMovement.IsSpawned && !_playerMovement.IsOwner) return;
+
+        Collider[] detects = Physics.OverlapSphere(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);
+        foreach (Collider col in detects)
         {
-            Collider[] detects = Physics.OverlapSphere(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);
-            foreach (Collider col in detects)
+            if (col.TryGetComponent<HealthEntity>(out HealthEntity t))
             {
-                if (col.TryGetComponent<Entity>(out Entity t))
-                {
-                    bool check = true;
+                bool check = true;
 
-                    foreach (Entity tt in attackedEntis)
-                        if (tt == t)
-                            check = false;
-
-                    if (t == _player)
+                foreach (HealthEntity tt in attackedEntis)
+                    if (tt == t)
                         check = false;
 
-                    if (check)
-                    {
-                        print("meelehitted");
-                        t.Damage(currentWeapon.damage, Entity.damageType.meele);
-                        attackedEntis.Add(t);
-                    }
+                if (t == _player)
+                    check = false;
+
+                if (check)
+                {
+                    print("meelehitted");
+                    PlayingMovement targetPm = t.GetComponent<PlayingMovement>();
+                    if (targetPm != null && targetPm.IsSpawned)
+                        targetPm.TakeDamageServerRpc(currentWeapon.damage, IDamageable.DamageType.meele);
+                    else
+                        t.Damage(currentWeapon.damage, IDamageable.DamageType.meele);
+                    attackedEntis.Add(t);
                 }
             }
         }

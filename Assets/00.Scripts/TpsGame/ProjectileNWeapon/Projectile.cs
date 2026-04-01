@@ -37,9 +37,9 @@ public class Projectile : NetworkBehaviour
         Collider[] detects = Physics.OverlapSphere(transform.position, 0.1f);
         foreach (Collider col in detects)
         {
-            if (col.TryGetComponent<Entity>(out Entity t))
+            if (col.TryGetComponent<IDamageable>(out IDamageable t))
             {
-                t.Damage(_damage, Entity.damageType.bullet);
+                t.Damage(_damage, IDamageable.DamageType.bullet);
                 DestroyProjectile();
                 return;
             }

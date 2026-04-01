@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Monster : Entity
+public class Monster : HealthEntity
 {
     StateMachine _machine;
     protected override void Awake()
@@ -8,7 +8,7 @@ public class Monster : Entity
         base.Awake();
         _machine = GetComponent<StateMachine>();
     }
-    public override void Damage(int i, damageType type)
+    public override void Damage(int i, IDamageable.DamageType type)
     {
         base.Damage(i, type);
     }

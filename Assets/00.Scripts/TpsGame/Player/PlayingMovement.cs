@@ -295,6 +295,19 @@ public class PlayingMovement : NetworkBehaviour
         }
     }
 
+    [ClientRpc]
+    public void ShowBloodOverlayClientRpc(float value)
+    {
+        if (IsOwner)
+            GetComponent<PlayerStat>().ApplyBloodOverlay(value);
+    }
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void TakeDamageServerRpc(int amount, IDamageable.DamageType type)
+    {
+        GetComponent<PlayerStat>().Damage(amount, type);
+    }
+
     [ServerRpc]
     public void SpawnProjectileServerRpc(Vector3 pos, Quaternion rot, int damage, int prefabIndex)
     {
@@ -342,5 +355,26 @@ public class PlayingMovement : NetworkBehaviour
     public void IndicatorTextChange(string text)
     {
         _indicatorText.text = text;
+    }
+
+    [ClientRpc]
+    public void DieClientRpc()
+    {
+        // Hide the dead player's model on all clients
+        plaObj.gameObject.SetActive(false);
+
+        // Owner-only: local input, camera, and UI cleanup
+        if (IsOwner)
+            OnDeath();
+    }
+
+    public void OnDeath()
+    {
+        movementFreeze = true;
+        canInteractor = null;
+        IndicatorTextChange("");
+        enabled = false;
+        GetComponent<PlayerStat>().ApplyBloodOverlay(15);
+        CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.TopDown);
     }
 }
