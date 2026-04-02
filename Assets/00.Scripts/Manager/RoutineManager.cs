@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class RoutineManager : MonoBehaviour
 {
+    public Transform MainFire;
     public Light Directional;
     [Header("라운드 시간 관련")]
     public float dayTime;
@@ -18,6 +19,8 @@ public class RoutineManager : MonoBehaviour
     public void DayPass()
     {
         days++;
+        //7일 지날경우 게임 종료
+
     }
     public void ToNextPhase()
     {

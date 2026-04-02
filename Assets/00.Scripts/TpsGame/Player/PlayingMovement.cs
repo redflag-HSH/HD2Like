@@ -46,8 +46,6 @@ public class PlayingMovement : NetworkBehaviour
 
     public bool sprinting;
 
-    bool restricted;
-
     WeaponController controller;
 
 
@@ -95,6 +93,9 @@ public class PlayingMovement : NetworkBehaviour
             Debug.Log("owner is " + OwnerClientId);
             StartInitialize();
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnNetworkSceneLoaded;
+
+            if (VivoxPlayerMapper.Instance != null)
+                VivoxPlayerMapper.Instance.RegisterLocalPlayer(OwnerClientId);
         }
         else
         {
@@ -108,6 +109,7 @@ public class PlayingMovement : NetworkBehaviour
     {
         if (IsOwner)
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnNetworkSceneLoaded;
+
         base.OnNetworkDespawn();
     }
 
@@ -160,6 +162,9 @@ public class PlayingMovement : NetworkBehaviour
         // ground check
         _isGrounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
 
+        // Update Vivox 3D position for positional voice chat
+        if (VivoxManager.Instance != null)
+            VivoxManager.Instance.Set3DPosition(gameObject);
     }
 
     private void FixedUpdate()
@@ -376,5 +381,7 @@ public class PlayingMovement : NetworkBehaviour
         enabled = false;
         GetComponent<PlayerStat>().ApplyBloodOverlay(15);
         CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.TopDown);
+        if (VivoxManager.Instance != null)
+            VivoxManager.Instance.SetSpectatorMode(true);
     }
 }

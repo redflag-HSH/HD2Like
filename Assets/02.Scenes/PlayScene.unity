@@ -466,6 +466,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -3069836993349266090, guid: 2a567f02f5b5bdc46b5654dc709bdc61, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1888971753
+      objectReference: {fileID: 0}
+    - target: {fileID: -3069836993349266090, guid: 2a567f02f5b5bdc46b5654dc709bdc61, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3069836993349266090, guid: 2a567f02f5b5bdc46b5654dc709bdc61, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1845453491
+      objectReference: {fileID: 0}
     - target: {fileID: 1912364022427723682, guid: 2a567f02f5b5bdc46b5654dc709bdc61, type: 3}
       propertyPath: m_LocalPosition.x
       value: 17.71
@@ -1364,13 +1376,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.6830127, y: -0.18301266, z: -0.18301266, w: 0.6830127}
+  m_LocalRotation: {x: 0.47513098, y: -0.22534242, z: 0.12731093, w: 0.84098953}
   m_LocalPosition: {x: 0, y: 0.47299957, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -90, y: -30, z: 0}
+  m_LocalEulerAnglesHint: {x: 58.93, y: -30, z: 0}
 --- !u!114 &410087042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2546,6 +2558,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 461587371998207622, guid: 21e6ff96a0b92e145a25d077c44a65ee, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 404106499
+      objectReference: {fileID: 0}
+    - target: {fileID: 461587371998207622, guid: 21e6ff96a0b92e145a25d077c44a65ee, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 461587371998207622, guid: 21e6ff96a0b92e145a25d077c44a65ee, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1818031666
+      objectReference: {fileID: 0}
     - target: {fileID: 2341469821240892237, guid: 21e6ff96a0b92e145a25d077c44a65ee, type: 3}
       propertyPath: m_Name
       value: flareGunItem
@@ -3092,7 +3116,7 @@ GameObject:
   - component: {fileID: 1333825860}
   - component: {fileID: 1333825859}
   m_Layer: 0
-  m_Name: TestManager
+  m_Name: GameManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3646,6 +3670,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1234000000000000005, guid: d7853462888c0cd49bab7b5a9e4982f4, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3345517555
+      objectReference: {fileID: 0}
+    - target: {fileID: 1234000000000000005, guid: d7853462888c0cd49bab7b5a9e4982f4, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1234000000000000005, guid: d7853462888c0cd49bab7b5a9e4982f4, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1985146812
+      objectReference: {fileID: 0}
     - target: {fileID: 2978431436871272888, guid: d7853462888c0cd49bab7b5a9e4982f4, type: 3}
       propertyPath: m_Enabled
       value: 0
@@ -4508,6 +4544,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: AxeItem
       objectReference: {fileID: 0}
+    - target: {fileID: 8629027514965859684, guid: 591c045640267f2488cba0bb48ae6578, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3356292282
+      objectReference: {fileID: 0}
+    - target: {fileID: 8629027514965859684, guid: 591c045640267f2488cba0bb48ae6578, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8629027514965859684, guid: 591c045640267f2488cba0bb48ae6578, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 802000337
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5157,6 +5205,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1234000000000000004, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 1562118231
+      objectReference: {fileID: 0}
+    - target: {fileID: 1234000000000000004, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1234000000000000004, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 3694949564
+      objectReference: {fileID: 0}
     - target: {fileID: 4863595348090036259, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
       propertyPath: m_Name
       value: Projectile

@@ -569,10 +569,10 @@ MonoBehaviour:
   frostDrag:
   - 0
   - 20
+  canInteractor: {fileID: 0}
   projectilePrefabs:
   - {fileID: 4863595348090036259, guid: 91d594b587f2df74eb2f2ab87e2733af, type: 3}
   - {fileID: 3817236412414434586, guid: d7853462888c0cd49bab7b5a9e4982f4, type: 3}
-  canInteractor: {fileID: 0}
   _indicatorText: {fileID: 4729651234358844301}
 --- !u!114 &3756147400444534171
 MonoBehaviour:
