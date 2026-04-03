@@ -14,26 +14,26 @@ public class Sabotage : State
 {
     [Header("Sabotage")]
     [SerializeField] float sabotageDuration = 3f;
-    [SerializeField] float arrivalDistance  = 1.5f;
+    [SerializeField] float arrivalDistance = 1.5f;
 
     [Header("Object Attack")]
     [SerializeField] LayerMask objectLayer;
-    [SerializeField] float attackRange    = 1.2f;
+    [SerializeField] float attackRange = 1.2f;
     [SerializeField] float attackInterval = 0.5f;
-    [SerializeField] int   attackDamage   = 10;
+    [SerializeField] int attackDamage = 10;
 
     [Header("Flee")]
-    [SerializeField] float      detectionRadius = 6f;
-    [SerializeField] LayerMask  playerLayer;
-    [SerializeField] Transform  runPoint;
-    [SerializeField] float      fleeSpeed = 8f;
+    [SerializeField] float detectionRadius = 6f;
+    [SerializeField] LayerMask playerLayer;
+    [SerializeField] Transform runPoint;
+    [SerializeField] float fleeSpeed = 8f;
 
     NavMeshAgent _agent;
-    Transform    _target;
-    GameObject   _attackTarget;
-    float        _timer;
-    float        _normalSpeed;
-    Action       _tick;
+    Transform _target;
+    GameObject _attackTarget;
+    float _timer;
+    float _normalSpeed;
+    Action _tick;
 
     // ─── Unity ────────────────────────────────────────────────────
 
@@ -43,7 +43,7 @@ public class Sabotage : State
 
     public override void Enter()
     {
-        _timer       = 0f;
+        _timer = 0f;
         _normalSpeed = _agent.speed;
 
         Transform fire = ResolveMainFire();
@@ -64,7 +64,7 @@ public class Sabotage : State
 
     public override void Exit()
     {
-        _agent.speed     = _normalSpeed;
+        _agent.speed = _normalSpeed;
         _agent.isStopped = false;
         Debug.Log("[Sabotage] Sabotage finished.");
     }
@@ -73,7 +73,7 @@ public class Sabotage : State
 
     void TickTravelling()
     {
-        if (PlayerNearby())     { BeginFlee();   return; }
+        if (PlayerNearby()) { BeginFlee(); return; }
         if (ObjectAhead(out var obj)) { BeginAttack(obj); return; }
         if (ReachedDestination()) BeginPhase(TickSabotaging, stopAgent: true);
     }
@@ -84,7 +84,7 @@ public class Sabotage : State
 
         _timer += Time.deltaTime;
         if (_timer >= sabotageDuration)
-            machine.ChangeState(GetComponent<SabotagePatrol>());
+            machine.ChangeState(new SabotagePatrol());
     }
 
     void TickAttacking()
@@ -114,8 +114,8 @@ public class Sabotage : State
 
     void BeginPhase(Action phase, bool stopAgent)
     {
-        _tick            = phase;
-        _timer           = 0f;
+        _tick = phase;
+        _timer = 0f;
         _agent.isStopped = stopAgent;
     }
 
@@ -132,7 +132,7 @@ public class Sabotage : State
         _agent.speed = fleeSpeed;
 
         if (runPoint != null) _agent.SetDestination(runPoint.position);
-        else                  gameObject.SetActive(false);
+        else gameObject.SetActive(false);
     }
 
     void ResumeToTarget()
@@ -143,7 +143,7 @@ public class Sabotage : State
 
     // ─── Pure queries ─────────────────────────────────────────────
 
-    bool PlayerNearby()      => Physics.CheckSphere(transform.position, detectionRadius, playerLayer);
+    bool PlayerNearby() => Physics.CheckSphere(transform.position, detectionRadius, playerLayer);
     bool ReachedDestination() => !_agent.pathPending && _agent.remainingDistance <= arrivalDistance;
 
     bool ObjectAhead(out GameObject obj)

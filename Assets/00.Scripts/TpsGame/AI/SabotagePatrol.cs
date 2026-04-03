@@ -60,7 +60,7 @@ public class SabotagePatrol : State
 
         if (Random.value < 0.01f)
         {
-            machine.ChangeState(GetComponent<Sabotage>());
+            machine.ChangeState(new Sabotage());
             return;
         }
 
