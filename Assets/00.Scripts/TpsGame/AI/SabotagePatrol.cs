@@ -9,7 +9,7 @@ using UnityEngine.AI;
 public class SabotagePatrol : State
 {
     [Header("Patrol")]
-    [SerializeField] Transform[] waypoints;
+    [SerializeField] WaypointPath waypointPath;
     [SerializeField] float waypointReachDistance = 0.5f;
 
     [Header("Flee")]
@@ -22,6 +22,7 @@ public class SabotagePatrol : State
     int _currentWaypointIndex;
     float _normalSpeed;
     bool _fleeing;
+    Transform _fleeingPoint;
 
     void Awake()
     {
@@ -30,11 +31,13 @@ public class SabotagePatrol : State
 
     public override void Enter()
     {
+        _fleeingPoint = GetComponent<SabotageMonster>().GetFleePoint();
+        waypointPath = GetComponent<SabotageMonster>().GetWaypointPath();
         _fleeing = false;
         _normalSpeed = _agent.speed;
         _agent.isStopped = false;
 
-        if (waypoints == null || waypoints.Length == 0)
+        if (waypointPath == null || waypointPath.Count == 0)
         {
             Debug.LogWarning("[SabotagePatrol] No waypoints assigned.");
             return;
@@ -47,7 +50,8 @@ public class SabotagePatrol : State
     {
         if (_fleeing)
         {
-            if (!_agent.pathPending && _agent.remainingDistance <= waypointReachDistance)
+            if (_fleeingPoint != null &&
+                Vector3.Distance(transform.position, _fleeingPoint.position) <= waypointReachDistance)
                 gameObject.SetActive(false);
             return;
         }
@@ -60,15 +64,15 @@ public class SabotagePatrol : State
 
         if (Random.value < 0.01f)
         {
-            machine.ChangeState(new Sabotage());
+            machine.ChangeState(gameObject.AddComponent<Sabotage>());
             return;
         }
 
-        if (waypoints == null || waypoints.Length == 0) return;
+        if (waypointPath == null || waypointPath.Count == 0) return;
 
         if (!_agent.pathPending && _agent.remainingDistance <= waypointReachDistance)
         {
-            _currentWaypointIndex = (_currentWaypointIndex + 1) % waypoints.Length;
+            _currentWaypointIndex = (_currentWaypointIndex + 1) % waypointPath.Count;
             MoveToCurrentWaypoint();
         }
     }
@@ -98,7 +102,7 @@ public class SabotagePatrol : State
 
     void MoveToCurrentWaypoint()
     {
-        _agent.SetDestination(waypoints[_currentWaypointIndex].position);
+        _agent.SetDestination(waypointPath.GetWaypoint(_currentWaypointIndex).position);
     }
 
     void OnDrawGizmosSelected()

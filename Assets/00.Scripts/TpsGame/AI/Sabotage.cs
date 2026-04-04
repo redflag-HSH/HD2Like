@@ -25,11 +25,11 @@ public class Sabotage : State
     [Header("Flee")]
     [SerializeField] float detectionRadius = 6f;
     [SerializeField] LayerMask playerLayer;
-    [SerializeField] Transform runPoint;
     [SerializeField] float fleeSpeed = 8f;
 
     NavMeshAgent _agent;
     Transform _target;
+    Transform _fleePoint;
     GameObject _attackTarget;
     float _timer;
     float _normalSpeed;
@@ -45,6 +45,8 @@ public class Sabotage : State
     {
         _timer = 0f;
         _normalSpeed = _agent.speed;
+        _fleePoint = GetComponent<SabotageMonster>().GetFleePoint();
+        objectLayer = GetComponent<SabotageMonster>().GetObjectLayer();
 
         Transform fire = ResolveMainFire();
         if (fire == null)
@@ -84,7 +86,7 @@ public class Sabotage : State
 
         _timer += Time.deltaTime;
         if (_timer >= sabotageDuration)
-            machine.ChangeState(new SabotagePatrol());
+            Debug.Log("[Sabotage] MainFire sabotaged!");
     }
 
     void TickAttacking()
@@ -107,7 +109,9 @@ public class Sabotage : State
 
     void TickFleeing()
     {
-        if (ReachedDestination()) gameObject.SetActive(false);
+        if (_fleePoint != null &&
+            Vector3.Distance(transform.position, _fleePoint.position) <= arrivalDistance)
+            gameObject.SetActive(false);
     }
 
     // ─── Transitions ──────────────────────────────────────────────
@@ -131,7 +135,7 @@ public class Sabotage : State
         BeginPhase(TickFleeing, stopAgent: false);
         _agent.speed = fleeSpeed;
 
-        if (runPoint != null) _agent.SetDestination(runPoint.position);
+        if (_fleePoint != null) _agent.SetDestination(_fleePoint.position);
         else gameObject.SetActive(false);
     }
 
