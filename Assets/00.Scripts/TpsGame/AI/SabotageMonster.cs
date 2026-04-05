@@ -5,7 +5,7 @@ using UnityEngine;
 /// SabotagePatrol internally handles the Sabotage transition on its own.
 /// </summary>
 [RequireComponent(typeof(StateMachine))]
-public class SabotageMonster : MonoBehaviour
+public class SabotageMonster : MonoBehaviour, IDamageable
 {
     [Header("Alert")]
     [SerializeField] float alertRadius = 6f;
@@ -32,5 +32,21 @@ public class SabotageMonster : MonoBehaviour
     }
     public WaypointPath GetWaypointPath() => path;
     public Transform GetFleePoint() => fleePoint;
-    public LayerMask GetObjectLayer() => objectLayer;
+
+    public bool ObjectAhead(float range, out GameObject obj)
+    {
+        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, range, objectLayer))
+        {
+            obj = hit.collider.gameObject;
+            return true;
+        }
+        obj = null;
+        return false;
+    }
+
+    public void Damage(int damage, IDamageable.DamageType type)
+    {
+        // For now, just log the damage. You can expand this with health and death logic.
+        Debug.Log($"[SabotageMonster] Took {damage} damage.");
+    }
 }

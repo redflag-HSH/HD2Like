@@ -10,17 +10,25 @@ public class Patrol : State
 {
     [Header("Patrol Settings")]
     [SerializeField] WaypointPath waypointPath;
-    [SerializeField] float patrolSpeed    = 2.5f;
+    [SerializeField] float patrolSpeed = 2.5f;
     [SerializeField] float waitAtWaypoint = 1.5f;
     [SerializeField] float arrivalDistance = 0.5f;
 
+    [Header("Detection")]
+    [SerializeField] float detectionRadius = 12f;
+
     NavMeshAgent _agent;
+    LayerMask    _playerLayer;
     int   _waypointIndex;
     float _waitTimer;
     bool  _waiting;
     float _normalSpeed;
 
-    void Awake() => _agent = GetComponent<NavMeshAgent>();
+    void Awake()
+    {
+        _agent       = GetComponent<NavMeshAgent>();
+        _playerLayer = GetComponent<AttackerMonster>().GetPlayerLayer();
+    }
 
     // ─── State interface ──────────────────────────────────────────
 
@@ -32,11 +40,11 @@ public class Patrol : State
             return;
         }
 
-        _normalSpeed     = _agent.speed;
-        _agent.speed     = patrolSpeed;
+        _normalSpeed = _agent.speed;
+        _agent.speed = patrolSpeed;
         _agent.isStopped = false;
-        _waiting         = false;
-        _waitTimer       = 0f;
+        _waiting = false;
+        _waitTimer = 0f;
 
         GoToCurrentWaypoint();
         Debug.Log("[Patrol] Entered patrol state.");
@@ -58,17 +66,26 @@ public class Patrol : State
             return;
         }
 
+        Collider[] hits = new Collider[1];
+        if (Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, hits, _playerLayer) > 0)
+        {
+            Attacker attacker = gameObject.AddComponent<Attacker>();
+            attacker.SetTarget(hits[0].transform);
+            machine.ChangeState(attacker);
+            return;
+        }
+
         if (!_agent.pathPending && _agent.remainingDistance <= arrivalDistance)
         {
             _agent.isStopped = true;
-            _waiting         = true;
-            _waitTimer       = 0f;
+            _waiting = true;
+            _waitTimer = 0f;
         }
     }
 
     public override void Exit()
     {
-        _agent.speed     = _normalSpeed;
+        _agent.speed = _normalSpeed;
         _agent.isStopped = false;
         _agent.ResetPath();
         Debug.Log("[Patrol] Exiting patrol state.");

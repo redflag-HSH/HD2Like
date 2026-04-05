@@ -14,35 +14,41 @@ public class Attacker : State
 {
     [Header("Detection")]
     [SerializeField] float detectionRadius = 12f;
-    [SerializeField] LayerMask playerLayer;
 
     [Header("Chase")]
     [SerializeField] float chaseSpeed = 5f;
 
     [Header("Attack")]
-    [SerializeField] float attackRange    = 1.5f;
+    [SerializeField] float attackRange = 1.5f;
     [SerializeField] float attackInterval = 0.8f;
-    [SerializeField] int   attackDamage   = 20;
+    [SerializeField] int attackDamage = 20;
 
-    NavMeshAgent _agent;
-    Transform    _player;
-    float        _timer;
-    float        _normalSpeed;
-    Action       _tick;
+    NavMeshAgent    _agent;
+    AttackerMonster _monster;
+    LayerMask       _playerLayer;
+    Transform       _player;
+    GameObject      _objectTarget;
+    float           _timer;
+    float           _normalSpeed;
+    Action          _tick;
 
     // ─── Unity ────────────────────────────────────────────────────
 
-    void Awake() => _agent = GetComponent<NavMeshAgent>();
+    void Awake()
+    {
+        _agent       = GetComponent<NavMeshAgent>();
+        _monster     = GetComponent<AttackerMonster>();
+        _playerLayer = _monster.GetPlayerLayer();
+    }
 
     // ─── State interface ──────────────────────────────────────────
 
     public override void Enter()
     {
-        _timer       = 0f;
+        _timer = 0f;
         _normalSpeed = _agent.speed;
         _agent.speed = chaseSpeed;
 
-        _player = FindPlayer();
         if (_player == null)
         {
             Debug.LogWarning("[Attacker] No player found on Enter.");
@@ -58,7 +64,7 @@ public class Attacker : State
 
     public override void Exit()
     {
-        _agent.speed     = _normalSpeed;
+        _agent.speed = _normalSpeed;
         _agent.isStopped = false;
         _agent.ResetPath();
         Debug.Log("[Attacker] Exiting attack state.");
@@ -68,22 +74,30 @@ public class Attacker : State
 
     void TickIdle()
     {
-        _player = FindPlayer();
-        if (_player != null)
+        if (_player == null)
         {
-            BeginPhase(TickChasing, stopAgent: false);
-            _agent.speed = chaseSpeed;
+            Collider[] hits = new Collider[1];
+            if (Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, hits, _playerLayer) == 0)
+            {
+                machine.ChangeState(gameObject.AddComponent<Patrol>());
+                return;
+            }
+            _player = hits[0].transform;
         }
+
+        BeginPhase(TickChasing, stopAgent: false);
+        _agent.speed = chaseSpeed;
     }
 
     void TickChasing()
     {
         if (_player == null || !PlayerInRange(detectionRadius))
         {
-            BeginPhase(TickIdle, stopAgent: true);
-            Debug.Log("[Attacker] Lost player — idling.");
+            machine.ChangeState(gameObject.AddComponent<Patrol>());
             return;
         }
+
+        if (_monster.ObjectAhead(attackRange, out var obj)) { BeginAttackObject(obj); return; }
 
         _agent.SetDestination(_player.position);
 
@@ -91,11 +105,23 @@ public class Attacker : State
             BeginPhase(TickAttacking, stopAgent: true);
     }
 
+    void TickAttackingObject()
+    {
+        if (_objectTarget == null) { BeginPhase(TickChasing, stopAgent: false); return; }
+
+        _timer += Time.deltaTime;
+        if (_timer >= attackInterval)
+        {
+            _timer = 0f;
+            DamageObject();
+        }
+    }
+
     void TickAttacking()
     {
         if (_player == null || !PlayerInRange(detectionRadius))
         {
-            BeginPhase(TickIdle, stopAgent: true);
+            machine.ChangeState(gameObject.AddComponent<Patrol>());
             return;
         }
 
@@ -113,12 +139,20 @@ public class Attacker : State
         }
     }
 
+    public void SetTarget(Transform player) => _player = player;
+
     // ─── Transitions ──────────────────────────────────────────────
+
+    void BeginAttackObject(GameObject obj)
+    {
+        _objectTarget = obj;
+        BeginPhase(TickAttackingObject, stopAgent: true);
+    }
 
     void BeginPhase(Action phase, bool stopAgent)
     {
-        _tick            = phase;
-        _timer           = 0f;
+        _tick = phase;
+        _timer = 0f;
         _agent.isStopped = stopAgent;
     }
 
@@ -128,18 +162,17 @@ public class Attacker : State
         _player != null &&
         Vector3.Distance(transform.position, _player.position) <= radius;
 
-    static Transform FindPlayer()
-    {
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-        if (players.Length == 0) return null;
-        return players[UnityEngine.Random.Range(0, players.Length)].transform;
-    }
-
     // ─── Side-effect helpers ──────────────────────────────────────
 
     void DamagePlayer()
     {
         if (_player != null && _player.TryGetComponent<IDamageable>(out var d))
+            d.Damage(attackDamage, IDamageable.DamageType.meele);
+    }
+
+    void DamageObject()
+    {
+        if (_objectTarget != null && _objectTarget.TryGetComponent<IDamageable>(out var d))
             d.Damage(attackDamage, IDamageable.DamageType.meele);
     }
 

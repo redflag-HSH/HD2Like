@@ -10,6 +10,7 @@ using UnityEngine.AI;
 /// Perform() just calls _tick() — no flag chains.
 /// </summary>
 [RequireComponent(typeof(NavMeshAgent))]
+[RequireComponent(typeof(SabotageMonster))]
 public class Sabotage : State
 {
     [Header("Sabotage")]
@@ -17,7 +18,6 @@ public class Sabotage : State
     [SerializeField] float arrivalDistance = 1.5f;
 
     [Header("Object Attack")]
-    [SerializeField] LayerMask objectLayer;
     [SerializeField] float attackRange = 1.2f;
     [SerializeField] float attackInterval = 0.5f;
     [SerializeField] int attackDamage = 10;
@@ -46,7 +46,6 @@ public class Sabotage : State
         _timer = 0f;
         _normalSpeed = _agent.speed;
         _fleePoint = GetComponent<SabotageMonster>().GetFleePoint();
-        objectLayer = GetComponent<SabotageMonster>().GetObjectLayer();
 
         Transform fire = ResolveMainFire();
         if (fire == null)
@@ -76,7 +75,7 @@ public class Sabotage : State
     void TickTravelling()
     {
         if (PlayerNearby()) { BeginFlee(); return; }
-        if (ObjectAhead(out var obj)) { BeginAttack(obj); return; }
+        if (GetComponent<SabotageMonster>().ObjectAhead(attackRange, out var obj)) { BeginAttack(obj); return; }
         if (ReachedDestination()) BeginPhase(TickSabotaging, stopAgent: true);
     }
 
@@ -149,17 +148,6 @@ public class Sabotage : State
 
     bool PlayerNearby() => Physics.CheckSphere(transform.position, detectionRadius, playerLayer);
     bool ReachedDestination() => !_agent.pathPending && _agent.remainingDistance <= arrivalDistance;
-
-    bool ObjectAhead(out GameObject obj)
-    {
-        if (Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, attackRange, objectLayer))
-        {
-            obj = hit.collider.gameObject;
-            return true;
-        }
-        obj = null;
-        return false;
-    }
 
     // ─── Side-effect helpers ──────────────────────────────────────
 

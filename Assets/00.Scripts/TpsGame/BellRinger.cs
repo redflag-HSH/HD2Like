@@ -24,7 +24,7 @@ public class BellRinger : NetworkBehaviour
             RingServerRpc();
     }
 
-    [ServerRpc(RequireOwnership = false)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void RingServerRpc() => RingClientRpc();
 
     [ClientRpc]
