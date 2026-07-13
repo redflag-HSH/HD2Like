@@ -1,0 +1,36 @@
+.role-reveal-root {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 80px;
+    width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+    background-color: rgba(20, 20, 24, 0.85);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.role-title {
+    color: rgb(230, 230, 230);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    margin-bottom: 6px;
+}
+
+.role-title-cultist {
+    color: rgb(210, 60, 60);
+}
+
+.role-title-survivor {
+    color: rgb(90, 190, 120);
+}
+
+.role-desc {
+    color: rgb(200, 200, 200);
+    font-size: 13px;
+    -unity-text-align: middle-center;
+    white-space: normal;
+}

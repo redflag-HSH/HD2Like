@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="VoiceRosterPanel.uss" />
+    <ui:VisualElement name="voice-roster-root" class="voice-roster-root">
+        <ui:Label text="Voice Chat" class="voice-roster-title" />
+
+        <ui:VisualElement name="local-mic-row" class="local-mic-row">
+            <ui:Label text="You" class="participant-name" />
+            <ui:Toggle name="mic-mute-toggle" label="Mic Muted" class="mic-mute-toggle" />
+        </ui:VisualElement>
+
+        <ui:ScrollView name="participant-scroll" class="participant-scroll">
+            <ui:VisualElement name="participant-list" class="participant-list" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

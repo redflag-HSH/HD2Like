@@ -1,0 +1,39 @@
+.player-custom-root {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    width: 260px;
+    background-color: rgba(20, 20, 24, 0.85);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.player-custom-title {
+    color: rgb(230, 230, 230);
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.name-field {
+    margin-bottom: 8px;
+}
+
+.color-swatches {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.color-swatch {
+    width: 28px;
+    height: 28px;
+    margin: 3px;
+    border-radius: 4px;
+    border-width: 2px;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.close-button {
+    align-self: flex-end;
+}

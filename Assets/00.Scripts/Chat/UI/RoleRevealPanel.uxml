@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="RoleRevealPanel.uss" />
+    <ui:VisualElement name="role-reveal-root" class="role-reveal-root">
+        <ui:Label name="role-title" text="You are a Survivor" class="role-title" />
+        <ui:Label name="role-desc" text="Complete tasks and survive." class="role-desc" />
+    </ui:VisualElement>
+</ui:UXML>

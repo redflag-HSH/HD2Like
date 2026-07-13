@@ -1,0 +1,62 @@
+.voice-roster-root {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+    width: 260px;
+    max-height: 320px;
+    background-color: rgba(20, 20, 24, 0.85);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.voice-roster-title {
+    color: rgb(230, 230, 230);
+    font-size: 14px;
+    -unity-font-style: bold;
+    margin-bottom: 6px;
+}
+
+.local-mic-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 2px;
+    margin-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+
+.mic-mute-toggle {
+    margin: 0;
+}
+
+.participant-scroll {
+    max-height: 240px;
+}
+
+.participant-list {
+    flex-direction: column;
+}
+
+.participant-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 4px 2px;
+}
+
+.participant-name {
+    color: rgb(220, 220, 220);
+    font-size: 12px;
+    width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mute-toggle {
+    margin: 0 4px;
+}
+
+.volume-slider {
+    flex-grow: 1;
+    margin: 0;
+}

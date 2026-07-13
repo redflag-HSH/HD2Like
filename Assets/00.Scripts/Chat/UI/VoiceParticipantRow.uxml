@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="participant-row" class="participant-row">
+        <ui:Label name="participant-name" class="participant-name" text="Player" />
+        <ui:Toggle name="mute-toggle" class="mute-toggle" />
+        <ui:Slider name="volume-slider" class="volume-slider" low-value="0" high-value="100" value="50" />
+    </ui:VisualElement>
+</ui:UXML>

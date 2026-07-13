@@ -1,55 +1,77 @@
 using System.Collections;
 using Unity.Mathematics;
+using Unity.Netcode;
 using UnityEngine;
 
 public class RoutineManager : MonoBehaviour
 {
+    public static RoutineManager instance;
+
     public Transform MainFire;
     public Light Directional;
-    [Header("¶ó¿îµå ½Ã°£ °ü·Ã")]
+    [Header("ë¼ìš´ë“œ ì‹œê°„ ê´€ë ¨")]
     public float dayTime;
     public float nightTime;
-    [Header("³¯Â¥ °ü·Ã")]
+    [Header("ë‚ ì§œ ê´€ë ¨")]
     public int days;
+    public int dayLimit = 7;
     public bool dayNight;
+    public WaypointPath path;
     private void Awake()
     {
+        if (instance == null)
+            instance = this;
+        else
+        {
+            Debug.Log("there is already RoutineManager Existing");
+            Destroy(this);
+            return;
+        }
+
         ToNextPhase();
     }
     public void DayPass()
     {
         days++;
-        //7ÀÏ Áö³¯°æ¿ì °ÔÀÓ Á¾·á
-
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            GameRoleManager.instance?.CheckDayLimit(days, dayLimit);
     }
     public void ToNextPhase()
     {
         dayNight = !dayNight;
         if (dayNight)
         {
-            //Á¶¸í ±³Ã¼
+            //ì¡°ëª… êµì²´
             Directional.transform.rotation = quaternion.Euler(65, -30, 0);
             RenderSettings.fog = true;
             RenderSettings.fogColor = Color.white;
             RenderSettings.fogDensity = .01f;
 
-            //·£´ıÇÏ°Ô ¾ÆÀÌÅÛ »ı¼º
-            //»ıÁ¸ÀÚÃø ¹Ì¼Ç
-            //ÄÃÆ¼Ãø ¹Ì¼Ç
+            //ëœë¤í•˜ê²Œ ì•„ì´í…œ ìƒì„±
+            RegenerateItems();
+            //ìƒì¡´ìì¸¡ ë¯¸ì…˜
+            //ì»¬í‹°ì¸¡ ë¯¸ì…˜
             DayPass();
         }
         else
         {
-            //Á¶¸í ±³Ã¼
+            //ì¡°ëª… êµì²´
             Directional.transform.rotation = quaternion.Euler(270, -30, 0);
             Debug.Log(Directional.transform.eulerAngles);
             RenderSettings.fog = false;
             RenderSettings.fogDensity = 0f;
-            //»ıÁ¸ÀÚÃø ¹Ì¼Ç
-            //ÄÃÆ¼Ãø ¹Ì¼Ç
-            //¸ó½ºÅÍ ¿şÀÌºê °è»ê
+            RegenerateItems();
+            //ìƒì¡´ìì¸¡ ë¯¸ì…˜
+            //ì»¬í‹°ì¸¡ ë¯¸ì…˜
+            //ëª¬ìŠ¤í„° ì›¨ì´ë¸Œ ê³„ì‚°
         }
         StartCoroutine(dayNightChangeWait());
+    }
+
+    void RegenerateItems()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            ItemManager.instance?.RegenerateAll();
     }
     IEnumerator dayNightChangeWait()
     {

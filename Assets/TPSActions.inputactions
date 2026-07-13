@@ -122,6 +122,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "MicMute",
+                    "type": "Button",
+                    "id": "9a3d5f2e-1b6a-4e0d-9c7f-5c2e4a8b6d1f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ToggleRoster",
+                    "type": "Button",
+                    "id": "e5b8a1c3-4d6f-4a2e-9b1d-7c3e5f8a2d4b",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -375,6 +393,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Discard",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7c1e9b4a-2d5f-4a3e-8b0c-1f6d9e7a4c2b",
+                    "path": "<Keyboard>/m",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MicMute",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1f4d6a8b-3c5e-4f7a-9b2d-6e8c1a4f7b3d",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleRoster",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

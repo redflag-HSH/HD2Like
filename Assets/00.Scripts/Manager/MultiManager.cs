@@ -26,6 +26,36 @@ public class MultiManager : NetworkBehaviour
             break;
         }
         PlayerColors = new List<Color>();
+
+        if (IsServer)
+            SpreadPlayers();
+    }
+
+    void SpreadPlayers()
+    {
+        RoutineManager rm = RoutineManager.instance;
+        if (rm == null || rm.path == null || rm.path.Count == 0) return;
+
+        PlayingMovement[] allPlayers = FindObjectsByType<PlayingMovement>(FindObjectsSortMode.None);
+        if (allPlayers.Length == 0) return;
+
+        // Shuffle waypoint indices
+        List<int> indices = new List<int>();
+        for (int i = 0; i < rm.path.Count; i++) indices.Add(i);
+        for (int i = indices.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+        }
+
+        for (int i = 0; i < allPlayers.Length; i++)
+        {
+            Transform wp = rm.path.GetWaypoint(indices[i % indices.Count]);
+            CharacterController cc = allPlayers[i].GetComponent<CharacterController>();
+            if (cc != null) cc.enabled = false;
+            allPlayers[i].transform.position = wp.position;
+            if (cc != null) cc.enabled = true;
+        }
     }
 
     [Rpc(SendTo.Everyone)]
@@ -36,31 +66,11 @@ public class MultiManager : NetworkBehaviour
             players[i].plaObj.GetComponent<Renderer>().material.color = PlayerColors[i];
         }
     }
-    //Å¬¶óÀÌ¾ğÆ®¿¡¼­µµ ÀÛµ¿ °¡´ÉÇÏÁö¸¸ ¿ÀÁ÷ ¼­¹ö¿¡¼­¸¸ °á°ú°¡ µµÃâµÊ
+    //í´ë¼ì´ì–¸íŠ¸ì—ì„œë„ ì‘ë™ ê°€ëŠ¥í•˜ì§€ë§Œ ì˜¤ì§ ì„œë²„ì—ì„œë§Œ ê²°ê³¼ê°€ ë„ì¶œë¨
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     public void playerMatGetServerRpc(Color c)
     {
         PlayerColors.Add(c);
         playerMatSetClientRpc();
-    }
-    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-    public void NewOnesLoadPlayersRPC()
-    {
-        //½Å±ÔÀÏ°æ¿ì
-        //¼­¹ö¿¡¼­ ¹Ş±â
-        if(((int)this.OwnerClientId)==players.Count)
-        {
-
-        }
-        //Å¬¶óÀÌ¾ğÆ®¿¡¼­ ¹Ş±â
-
-        //±âÁ¸ ¸®½ºÆ®¹Ş°í loadplayersrpc
-
-    }
-    [Rpc(SendTo.Everyone)]
-    public void LoadPlayersRPC()
-    {
-        //±âÁ¸ÀÏ°æ¿ì
-        //Ãß°¡¸¸
     }
 }

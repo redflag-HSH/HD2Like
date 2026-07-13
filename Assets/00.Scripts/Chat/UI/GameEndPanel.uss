@@ -1,0 +1,39 @@
+.game-end-root {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.game-end-panel {
+    background-color: rgba(20, 20, 24, 0.9);
+    border-radius: 10px;
+    padding: 28px 40px;
+    align-items: center;
+}
+
+.game-end-title {
+    font-size: 34px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: rgb(230, 230, 230);
+}
+
+.game-end-title-cultist {
+    color: rgb(210, 60, 60);
+}
+
+.game-end-title-survivor {
+    color: rgb(90, 190, 120);
+}
+
+.game-end-countdown {
+    margin-top: 12px;
+    font-size: 15px;
+    -unity-text-align: middle-center;
+    color: rgb(190, 190, 190);
+}

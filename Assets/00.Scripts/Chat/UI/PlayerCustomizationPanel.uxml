@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="PlayerCustomizationPanel.uss" />
+    <ui:VisualElement name="player-custom-root" class="player-custom-root">
+        <ui:Label text="Customize" class="player-custom-title" />
+        <ui:TextField name="name-field" label="Name" max-length="32" class="name-field" />
+        <ui:VisualElement name="color-swatches" class="color-swatches" />
+        <ui:Button name="close-button" text="Done" class="close-button" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="GameEndPanel.uss" />
+    <ui:VisualElement name="game-end-root" class="game-end-root">
+        <ui:VisualElement name="game-end-panel" class="game-end-panel">
+            <ui:Label name="game-end-title" text="Survivors Win" class="game-end-title" />
+            <ui:Label name="game-end-countdown" text="Returning to lobby in 5..." class="game-end-countdown" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

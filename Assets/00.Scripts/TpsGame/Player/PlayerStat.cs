@@ -88,11 +88,29 @@ public class PlayerStat : HealthEntity
     }
     protected override void Death()
     {
+        PlayerRole pr = GetComponent<PlayerRole>();
+        if (pr != null && pr.IsSpawned)
+            pr.SetAlive(false);
+
         PlayingMovement pm = GetComponent<PlayingMovement>();
         if (pm.IsSpawned)
             pm.DieClientRpc();
         else
             pm.OnDeath(); // fallback for offline/test mode
+
+        if (GameRoleManager.instance != null)
+            GameRoleManager.instance.OnPlayerDied();
+    }
+    // Called both server-side (for the authoritative health value Damage()
+    // mutates) and from the owner's ReviveClientRpc handler (for the local
+    // frostbite/isAlive bookkeeping Update() reads every frame).
+    public void ResetForNewMatch()
+    {
+        health = maxHealth;
+        frostbite = 0f;
+        frosting = false;
+        frostbiteDamageCan = true;
+        isAlive = true;
     }
     IEnumerator FrostDamageDelay()
     {

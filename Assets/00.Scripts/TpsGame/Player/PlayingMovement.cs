@@ -127,8 +127,6 @@ public class PlayingMovement : NetworkBehaviour
 
     public void StartInitialize()
     {
-        GetComponent<playerCustom>().SetRandomColor();
-
         controller = GetComponentInChildren<WeaponController>();
 
         CamReferenceSet();
@@ -383,5 +381,27 @@ public class PlayingMovement : NetworkBehaviour
         CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.TopDown);
         if (VivoxManager.Instance != null)
             VivoxManager.Instance.SetSpectatorMode(true);
+    }
+
+    // Called server-side (Lobby.OnHostStart) before a new match begins, to
+    // bring back anyone who died in the previous round.
+    [ClientRpc]
+    public void ReviveClientRpc()
+    {
+        // Visible to everyone: the model was hidden for everyone on death.
+        plaObj.gameObject.SetActive(true);
+
+        if (!IsOwner) return;
+
+        movementFreeze = false;
+        canInteractor = null;
+        IndicatorTextChange("");
+        enabled = true;
+        GetComponent<PlayerStat>()?.ResetForNewMatch();
+        GetComponent<PlayerStat>()?.ApplyBloodOverlay(15);
+        if (CameraController.instance != null)
+            CameraController.instance.SwitchCameraStyle(CameraController.CameraStyle.Basic);
+        if (VivoxManager.Instance != null)
+            VivoxManager.Instance.SetSpectatorMode(false);
     }
 }

@@ -208,6 +208,24 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MicMute"",
+                    ""type"": ""Button"",
+                    ""id"": ""9a3d5f2e-1b6a-4e0d-9c7f-5c2e4a8b6d1f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleRoster"",
+                    ""type"": ""Button"",
+                    ""id"": ""e5b8a1c3-4d6f-4a2e-9b1d-7c3e5f8a2d4b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -463,6 +481,28 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
                     ""action"": ""Discard"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7c1e9b4a-2d5f-4a3e-8b0c-1f6d9e7a4c2b"",
+                    ""path"": ""<Keyboard>/m"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MicMute"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1f4d6a8b-3c5e-4f7a-9b2d-6e8c1a4f7b3d"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleRoster"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -484,6 +524,8 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         m_tpsDefalut__3 = m_tpsDefalut.FindAction("3", throwIfNotFound: true);
         m_tpsDefalut__4 = m_tpsDefalut.FindAction("4", throwIfNotFound: true);
         m_tpsDefalut_Discard = m_tpsDefalut.FindAction("Discard", throwIfNotFound: true);
+        m_tpsDefalut_MicMute = m_tpsDefalut.FindAction("MicMute", throwIfNotFound: true);
+        m_tpsDefalut_ToggleRoster = m_tpsDefalut.FindAction("ToggleRoster", throwIfNotFound: true);
     }
 
     ~@TPSActions()
@@ -577,6 +619,8 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_tpsDefalut__3;
     private readonly InputAction m_tpsDefalut__4;
     private readonly InputAction m_tpsDefalut_Discard;
+    private readonly InputAction m_tpsDefalut_MicMute;
+    private readonly InputAction m_tpsDefalut_ToggleRoster;
     /// <summary>
     /// Provides access to input actions defined in input action map "tpsDefalut".
     /// </summary>
@@ -640,6 +684,14 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "tpsDefalut/Discard".
         /// </summary>
         public InputAction @Discard => m_Wrapper.m_tpsDefalut_Discard;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/MicMute".
+        /// </summary>
+        public InputAction @MicMute => m_Wrapper.m_tpsDefalut_MicMute;
+        /// <summary>
+        /// Provides access to the underlying input action "tpsDefalut/ToggleRoster".
+        /// </summary>
+        public InputAction @ToggleRoster => m_Wrapper.m_tpsDefalut_ToggleRoster;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -705,6 +757,12 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @Discard.started += instance.OnDiscard;
             @Discard.performed += instance.OnDiscard;
             @Discard.canceled += instance.OnDiscard;
+            @MicMute.started += instance.OnMicMute;
+            @MicMute.performed += instance.OnMicMute;
+            @MicMute.canceled += instance.OnMicMute;
+            @ToggleRoster.started += instance.OnToggleRoster;
+            @ToggleRoster.performed += instance.OnToggleRoster;
+            @ToggleRoster.canceled += instance.OnToggleRoster;
         }
 
         /// <summary>
@@ -755,6 +813,12 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
             @Discard.started -= instance.OnDiscard;
             @Discard.performed -= instance.OnDiscard;
             @Discard.canceled -= instance.OnDiscard;
+            @MicMute.started -= instance.OnMicMute;
+            @MicMute.performed -= instance.OnMicMute;
+            @MicMute.canceled -= instance.OnMicMute;
+            @ToggleRoster.started -= instance.OnToggleRoster;
+            @ToggleRoster.performed -= instance.OnToggleRoster;
+            @ToggleRoster.canceled -= instance.OnToggleRoster;
         }
 
         /// <summary>
@@ -886,5 +950,19 @@ public partial class @TPSActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnDiscard(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MicMute" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMicMute(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ToggleRoster" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToggleRoster(InputAction.CallbackContext context);
     }
 }

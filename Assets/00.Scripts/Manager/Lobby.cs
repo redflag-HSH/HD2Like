@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -45,6 +46,11 @@ public class Lobby : NetworkBehaviour
         if (startInteractor != null) startInteractor.gameObject.SetActive(false);
         if (readyInteractor != null) readyInteractor.gameObject.SetActive(false);
 
+        // Seed from whoever's already connected - matters when this Lobby
+        // instance spawns because everyone returned from PlayScene, since
+        // OnClientConnectedCallback only fires for *new* connections.
+        clientCount.Value = Mathf.Max(0, NetworkManager.Singleton.ConnectedClientsList.Count - 1);
+
         NetworkManager.Singleton.OnClientConnectedCallback += OnClientConnected;
         NetworkManager.Singleton.OnClientDisconnectCallback += OnClientDisconnected;
     }
@@ -81,6 +87,24 @@ public class Lobby : NetworkBehaviour
     public void OnHostStart(PlayingMovement player)
     {
         if (!IsHost) return;
+
+        List<ulong> clientIds = new List<ulong>();
+        foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
+            clientIds.Add(client.ClientId);
+        RoleAssignmentCache.Assign(clientIds);
+
+        // Players who died or held a role from a previous match need to be
+        // reset before the next one starts - their player object persists
+        // across the Lobby/PlayScene transition rather than respawning.
+        foreach (NetworkClient client in NetworkManager.Singleton.ConnectedClientsList)
+        {
+            if (client.PlayerObject == null) continue;
+
+            client.PlayerObject.GetComponent<PlayerRole>()?.ResetForNewMatch();
+            client.PlayerObject.GetComponent<PlayerStat>()?.ResetForNewMatch();
+            client.PlayerObject.GetComponent<PlayingMovement>()?.ReviveClientRpc();
+        }
+
         ClientManager cm = FindFirstObjectByType<ClientManager>();
         if (cm != null)
             cm.LoadSceneNetwork("PlayScene");
