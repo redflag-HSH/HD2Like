@@ -1,10 +1,18 @@
+using System.Collections;
+using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 // Lets the local player set their name and pick a color from playerCustom's
 // preset palette. Same singleton + UIDocument setup as VoiceRosterUI/
-// RoleRevealUI. Shown automatically once for the owner's player when
-// playerCustom spawns; can be re-opened by calling Show(playerCustom) again.
+// RoleRevealUI.
+//
+// Lobby-only: opens automatically when LobbyScene loads (or when the local
+// player spawns there), can be reopened/closed with the P key (C is taken by
+// Crouch), and is hidden in every other scene. Unlocks the cursor while open and restores the
+// previous lock state on close.
 //
 // Setup: add a UIDocument to this GameObject, assign a PanelSettings asset
 // and PlayerCustomizationPanel.uxml as its Source Asset.
@@ -13,6 +21,8 @@ public class PlayerCustomizationUI : MonoBehaviour
 {
     public static PlayerCustomizationUI Instance { get; private set; }
 
+    const string LobbySceneName = "LobbyScene";
+
     UIDocument _document;
     VisualElement _root;
     TextField _nameField;
@@ -20,6 +30,9 @@ public class PlayerCustomizationUI : MonoBehaviour
     Button _closeButton;
 
     playerCustom _target;
+    bool _visible;
+    CursorLockMode _prevLockState;
+    bool _prevCursorVisible;
 
     void Awake()
     {
@@ -47,12 +60,75 @@ public class PlayerCustomizationUI : MonoBehaviour
 
         BuildSwatches();
         SetVisible(false);
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     void OnDisable()
     {
         _closeButton.clicked -= OnCloseClicked;
         _nameField.UnregisterValueChangedCallback(OnNameFieldChanged);
+
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    static bool InLobby => SceneManager.GetActiveScene().name == LobbySceneName;
+
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == LobbySceneName)
+            StartCoroutine(ShowWhenLocalPlayerReady());
+        else
+            SetVisible(false);
+    }
+
+    // The local player object can spawn a few frames after the scene loads
+    // (or already exist when returning from PlayScene, since player objects
+    // persist across the transition and OnNetworkSpawn won't re-fire).
+    IEnumerator ShowWhenLocalPlayerReady()
+    {
+        float deadline = Time.unscaledTime + 10f;
+        while (Time.unscaledTime < deadline && InLobby)
+        {
+            playerCustom local = FindLocalPlayerCustom();
+            if (local != null)
+            {
+                Show(local);
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    playerCustom FindLocalPlayerCustom()
+    {
+        NetworkManager nm = NetworkManager.Singleton;
+        if (nm == null || nm.LocalClient == null || nm.LocalClient.PlayerObject == null)
+            return null;
+        return nm.LocalClient.PlayerObject.GetComponent<playerCustom>();
+    }
+
+    void Update()
+    {
+        if (!InLobby) return;
+
+        Keyboard kb = Keyboard.current;
+        if (kb == null || !kb.pKey.wasPressedThisFrame) return;
+
+        if (_visible)
+        {
+            // Don't close on 'p' while the player is typing their name.
+            if (_nameField.panel?.focusController?.focusedElement is VisualElement focused
+                && (focused == _nameField || _nameField.Contains(focused)))
+                return;
+            SetVisible(false);
+        }
+        else
+        {
+            playerCustom local = _target != null ? _target : FindLocalPlayerCustom();
+            if (local != null)
+                Show(local);
+        }
     }
 
     void BuildSwatches()
@@ -97,5 +173,22 @@ public class PlayerCustomizationUI : MonoBehaviour
     void SetVisible(bool visible)
     {
         _root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+        if (visible == _visible) return;
+        _visible = visible;
+
+        // Lobby gameplay locks the cursor; free it while the panel is open
+        // so the swatches/name field are clickable, then put it back.
+        if (visible)
+        {
+            _prevLockState = UnityEngine.Cursor.lockState;
+            _prevCursorVisible = UnityEngine.Cursor.visible;
+            UnityEngine.Cursor.lockState = CursorLockMode.None;
+            UnityEngine.Cursor.visible = true;
+        }
+        else
+        {
+            UnityEngine.Cursor.lockState = _prevLockState;
+            UnityEngine.Cursor.visible = _prevCursorVisible;
+        }
     }
 }

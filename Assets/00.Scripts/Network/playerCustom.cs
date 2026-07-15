@@ -47,7 +47,12 @@ public class playerCustom : NetworkBehaviour
             SetColorIndex(savedIndex);
             SetName(savedName);
 
-            PlayerCustomizationUI.Instance?.Show(this);
+            // Customization is a lobby feature - if we spawned anywhere else
+            // (e.g. mid-match join), PlayerCustomizationUI's sceneLoaded hook
+            // shows the panel next time the lobby loads instead.
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "LobbyScene"
+                && PlayerCustomizationUI.Instance != null)
+                PlayerCustomizationUI.Instance.Show(this);
         }
 
         ApplyColor(playerColor.Value);
