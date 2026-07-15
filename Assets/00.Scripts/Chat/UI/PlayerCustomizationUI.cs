@@ -1,18 +1,16 @@
-using System.Collections;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
-// Lets the local player set their name and pick a color from playerCustom's
-// preset palette. Same singleton + UIDocument setup as VoiceRosterUI/
-// RoleRevealUI.
+// Title-screen panel where the local player sets their name and picks a body
+// color before hosting/joining. No network session exists yet, so edits are
+// saved straight to PlayerPrefs (playerCustom.PrefsNameKey/PrefsColorKey);
+// playerCustom reads those keys on spawn and syncs them to everyone. The name
+// is also pushed into VivoxSceneHandler so voice chat uses it.
 //
-// Lobby-only: opens automatically when LobbyScene loads (or when the local
-// player spawns there), can be reopened/closed with the P key (C is taken by
-// Crouch), and is hidden in every other scene. Unlocks the cursor while open and restores the
-// previous lock state on close.
+// Opens automatically in the Title scene, toggles with the P key there, and
+// is hidden in every other scene.
 //
 // Setup: add a UIDocument to this GameObject, assign a PanelSettings asset
 // and PlayerCustomizationPanel.uxml as its Source Asset.
@@ -21,18 +19,15 @@ public class PlayerCustomizationUI : MonoBehaviour
 {
     public static PlayerCustomizationUI Instance { get; private set; }
 
-    const string LobbySceneName = "LobbyScene";
+    const string TitleSceneName = "Title";
+    const string SelectedSwatchClass = "color-swatch--selected";
 
     UIDocument _document;
     VisualElement _root;
     TextField _nameField;
     VisualElement _swatchContainer;
     Button _closeButton;
-
-    playerCustom _target;
     bool _visible;
-    CursorLockMode _prevLockState;
-    bool _prevCursorVisible;
 
     void Awake()
     {
@@ -62,6 +57,11 @@ public class PlayerCustomizationUI : MonoBehaviour
         SetVisible(false);
 
         SceneManager.sceneLoaded += OnSceneLoaded;
+
+        // Title is the first scene, so its sceneLoaded event can fire before
+        // this handler is registered - check the active scene directly too.
+        if (InTitle)
+            ShowPanel();
     }
 
     void OnDisable()
@@ -72,45 +72,19 @@ public class PlayerCustomizationUI : MonoBehaviour
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    static bool InLobby => SceneManager.GetActiveScene().name == LobbySceneName;
+    static bool InTitle => SceneManager.GetActiveScene().name == TitleSceneName;
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        if (scene.name == LobbySceneName)
-            StartCoroutine(ShowWhenLocalPlayerReady());
+        if (scene.name == TitleSceneName)
+            ShowPanel();
         else
             SetVisible(false);
     }
 
-    // The local player object can spawn a few frames after the scene loads
-    // (or already exist when returning from PlayScene, since player objects
-    // persist across the transition and OnNetworkSpawn won't re-fire).
-    IEnumerator ShowWhenLocalPlayerReady()
-    {
-        float deadline = Time.unscaledTime + 10f;
-        while (Time.unscaledTime < deadline && InLobby)
-        {
-            playerCustom local = FindLocalPlayerCustom();
-            if (local != null)
-            {
-                Show(local);
-                yield break;
-            }
-            yield return null;
-        }
-    }
-
-    playerCustom FindLocalPlayerCustom()
-    {
-        NetworkManager nm = NetworkManager.Singleton;
-        if (nm == null || nm.LocalClient == null || nm.LocalClient.PlayerObject == null)
-            return null;
-        return nm.LocalClient.PlayerObject.GetComponent<playerCustom>();
-    }
-
     void Update()
     {
-        if (!InLobby) return;
+        if (!InTitle) return;
 
         Keyboard kb = Keyboard.current;
         if (kb == null || !kb.pKey.wasPressedThisFrame) return;
@@ -125,10 +99,24 @@ public class PlayerCustomizationUI : MonoBehaviour
         }
         else
         {
-            playerCustom local = _target != null ? _target : FindLocalPlayerCustom();
-            if (local != null)
-                Show(local);
+            ShowPanel();
         }
+    }
+
+    void ShowPanel()
+    {
+        string savedName = PlayerPrefs.GetString(playerCustom.PrefsNameKey, "");
+        if (string.IsNullOrWhiteSpace(savedName))
+        {
+            // Same default playerCustom would generate on spawn; saving it now
+            // keeps Vivox login and the first spawn consistent.
+            savedName = "Player" + Random.Range(1000, 9999);
+            SaveName(savedName);
+        }
+
+        _nameField.SetValueWithoutNotify(savedName);
+        UpdateSelectedSwatch(PlayerPrefs.GetInt(playerCustom.PrefsColorKey, -1));
+        SetVisible(true);
     }
 
     void BuildSwatches()
@@ -137,24 +125,40 @@ public class PlayerCustomizationUI : MonoBehaviour
         for (int i = 0; i < playerCustom.PresetColors.Length; i++)
         {
             int index = i;
-            Button swatch = new Button(() => _target?.SetColorIndex(index));
+            Button swatch = new Button(() => OnSwatchClicked(index));
             swatch.AddToClassList("color-swatch");
             swatch.style.backgroundColor = playerCustom.PresetColors[i];
             _swatchContainer.Add(swatch);
         }
     }
 
+    void OnSwatchClicked(int index)
+    {
+        PlayerPrefs.SetInt(playerCustom.PrefsColorKey, index);
+        UpdateSelectedSwatch(index);
+    }
+
+    void UpdateSelectedSwatch(int index)
+    {
+        for (int i = 0; i < _swatchContainer.childCount; i++)
+            _swatchContainer[i].EnableInClassList(SelectedSwatchClass, i == index);
+    }
+
     void OnNameFieldChanged(ChangeEvent<string> evt)
     {
-        // Explicit null check instead of ?. so a destroyed player object
-        // (Unity fake-null) is caught too.
-        if (_target == null)
-        {
-            Debug.LogWarning($"[NameSync] name field changed to '{evt.newValue}' but _target is null/destroyed - Show() never ran or the player object is gone");
-            return;
-        }
-        Debug.Log($"[NameSync] name field changed to '{evt.newValue}', forwarding to playerCustom");
-        _target.SetName(evt.newValue);
+        if (string.IsNullOrWhiteSpace(evt.newValue)) return;
+        SaveName(evt.newValue);
+    }
+
+    void SaveName(string name)
+    {
+        Debug.Log($"[NameSync] saving name '{name}' to PlayerPrefs");
+        PlayerPrefs.SetString(playerCustom.PrefsNameKey, name);
+
+        // Keep the Vivox display name in sync so the voice roster shows the
+        // same name (login happens on Title load, so set it as early as we can).
+        if (VivoxSceneHandler.Instance != null)
+            VivoxSceneHandler.Instance.SetPlayerName(name);
     }
 
     void OnCloseClicked()
@@ -162,33 +166,17 @@ public class PlayerCustomizationUI : MonoBehaviour
         SetVisible(false);
     }
 
-    public void Show(playerCustom target)
-    {
-        Debug.Log($"[NameSync] customization panel shown for client {target.OwnerClientId}, current name '{target.playerName.Value}'");
-        _target = target;
-        _nameField.SetValueWithoutNotify(target.playerName.Value.ToString());
-        SetVisible(true);
-    }
-
     void SetVisible(bool visible)
     {
-        _root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-        if (visible == _visible) return;
         _visible = visible;
+        _root.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 
-        // Lobby gameplay locks the cursor; free it while the panel is open
-        // so the swatches/name field are clickable, then put it back.
+        // Title is a menu scene - make sure the cursor is usable (it can stay
+        // locked from gameplay when a session ends mid-match).
         if (visible)
         {
-            _prevLockState = UnityEngine.Cursor.lockState;
-            _prevCursorVisible = UnityEngine.Cursor.visible;
             UnityEngine.Cursor.lockState = CursorLockMode.None;
             UnityEngine.Cursor.visible = true;
-        }
-        else
-        {
-            UnityEngine.Cursor.lockState = _prevLockState;
-            UnityEngine.Cursor.visible = _prevCursorVisible;
         }
     }
 }

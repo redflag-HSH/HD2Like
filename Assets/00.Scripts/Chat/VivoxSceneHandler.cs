@@ -71,6 +71,10 @@ public class VivoxSceneHandler : MonoBehaviour
 
     IEnumerator InitAndLogin()
     {
+        // Prefer the name saved by the title-screen customization panel so
+        // the Vivox display name matches the in-game nameplate.
+        playerName = PlayerPrefs.GetString(playerCustom.PrefsNameKey, playerName);
+
         var task = VivoxManager.Instance.InitializeAsync();
         yield return new WaitUntil(() => task.IsCompleted);
 

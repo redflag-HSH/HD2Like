@@ -16,8 +16,9 @@ public class playerCustom : NetworkBehaviour
         new Color(0.60f, 0.40f, 0.90f), // purple
     };
 
-    const string PrefsColorKey = "PlayerCustom_ColorIndex";
-    const string PrefsNameKey = "PlayerCustom_Name";
+    // Written by the title-screen PlayerCustomizationUI, read here on spawn.
+    public const string PrefsColorKey = "PlayerCustom_ColorIndex";
+    public const string PrefsNameKey = "PlayerCustom_Name";
 
     NetworkVariable<Color> playerColor = new NetworkVariable<Color>(
         Color.white,
@@ -46,13 +47,6 @@ public class playerCustom : NetworkBehaviour
             string savedName = PlayerPrefs.GetString(PrefsNameKey, "Player" + Random.Range(1000, 9999));
             SetColorIndex(savedIndex);
             SetName(savedName);
-
-            // Customization is a lobby feature - if we spawned anywhere else
-            // (e.g. mid-match join), PlayerCustomizationUI's sceneLoaded hook
-            // shows the panel next time the lobby loads instead.
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "LobbyScene"
-                && PlayerCustomizationUI.Instance != null)
-                PlayerCustomizationUI.Instance.Show(this);
         }
 
         ApplyColor(playerColor.Value);
