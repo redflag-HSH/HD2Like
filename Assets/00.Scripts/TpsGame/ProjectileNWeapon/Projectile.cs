@@ -1,3 +1,4 @@
+using SmokeSystem;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ public class Projectile : NetworkBehaviour
     [SerializeField] bool _gravityPerform;
     [SerializeField] float _gravityDivider;
     [SerializeField] float _moveForce;
+    [SerializeField] float _smokeDisturbRadius = 0.6f;
     private int _damage;
     float _GravityMultiplyByTime;
     float _lifeTime = 0;
@@ -29,6 +31,7 @@ public class Projectile : NetworkBehaviour
     protected virtual void Update()
     {
         Perform();
+        SmokeVolume.DisturbAt(transform.position, _smokeDisturbRadius);
         if (!_special && (IsServer || !IsSpawned))
             CheckCollide();
     }

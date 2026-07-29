@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using SmokeSystem;
 using UnityEngine;
 
 public class WeaponController : MonoBehaviour
@@ -89,6 +90,8 @@ public class WeaponController : MonoBehaviour
         if (!meeleAttacking) return;
         // Only the weapon owner sends damage — prevents double-hits from all clients
         if (_playerMovement.IsSpawned && !_playerMovement.IsOwner) return;
+
+        SmokeVolume.DisturbAt(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);
 
         Collider[] detects = Physics.OverlapSphere(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);
         foreach (Collider col in detects)

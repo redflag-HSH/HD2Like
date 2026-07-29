@@ -1,0 +1,572 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace SmokeSystem
+{
+    /// <summary>
+    /// CS2-style volumetric smoke: a voxel grid is flood-filled outward from the detonation
+    /// point using per-edge line-of-sight checks, so the cloud naturally stops at walls and
+    /// pours through doorways/windows instead of clipping through geometry. The same voxel
+    /// occupancy data is used both to spawn visual particles and to answer vision-blocking
+    /// queries (GetObscuration / IsPositionInSmoke), matching the "everyone sees the same
+    /// smoke" behaviour described for CS2.
+    /// </summary>
+    public class SmokeVolume : MonoBehaviour
+    {
+        [Header("Shape")]
+        [SerializeField] float radius = 4.5f;
+        [SerializeField] float cellSize = 0.4f;
+        [SerializeField] LayerMask obstacleMask = ~0;
+        [SerializeField] float wallCheckRadius = 0.12f;
+
+        [Header("Floor Safety Net")]
+        [Tooltip("Extra hard clamp: raycasts straight down from the seed once at detonation and never lets growth go below whatever floor it finds, regardless of what the per-edge checks decide. Disable if you need smoke to flow down stairs/ledges to a lower floor.")]
+        [SerializeField] bool clampToFloorBelowSeed = true;
+        [SerializeField] float floorSearchDistance = 3f;
+
+        [Header("Timing")]
+        [SerializeField] float growthDuration = 1.4f;
+        [SerializeField] float lifeDuration = 15f;
+        [SerializeField] float dissipateDuration = 2.5f;
+
+        [Header("Visuals")]
+        [SerializeField, Range(0f, 1f)] float particlesPerCell = 0.35f;
+        [SerializeField] Color smokeTint = new Color(0.8f, 0.8f, 0.82f, 1f);
+
+        [Header("Debug")]
+        [SerializeField] bool debugDrawCells = true;
+        [SerializeField] bool debugLogStats = true;
+
+        public static readonly List<SmokeVolume> ActiveVolumes = new List<SmokeVolume>();
+
+        readonly HashSet<Vector3Int> filledCells = new HashSet<Vector3Int>();
+        readonly HashSet<Vector3Int> clearedCells = new HashSet<Vector3Int>();
+        readonly Dictionary<Vector3Int, float> healTimers = new Dictionary<Vector3Int, float>();
+
+        List<Vector3Int> revealOrder;
+        int revealIndex;
+        Vector3 origin;
+        float floorClampY;
+        int targetVoxelCount;
+        float cellsPerSecond;
+        float cellBudgetAccumulator;
+        int blockedNeighborChecks;
+        int totalNeighborChecks;
+
+        ParticleSystem smokeParticles;
+        ParticleSystem.Particle[] scratchParticles;
+
+        enum State { Inactive, Growing, Idle, Dissipating, Done }
+        State state = State.Inactive;
+        float stateTimer;
+
+        static readonly Vector3Int[] neighborOffsets =
+        {
+            new Vector3Int(1, 0, 0), new Vector3Int(-1, 0, 0),
+            new Vector3Int(0, 1, 0), new Vector3Int(0, -1, 0),
+            new Vector3Int(0, 0, 1), new Vector3Int(0, 0, -1),
+        };
+
+        void Awake()
+        {
+            SetupParticleSystem();
+        }
+
+        void OnEnable() => ActiveVolumes.Add(this);
+        void OnDisable() => ActiveVolumes.Remove(this);
+
+        /// <summary>Starts the flood-fill simulation from the given world position.</summary>
+        public void BeginGrowth(Vector3 worldOrigin)
+        {
+            origin = worldOrigin;
+
+            // If the grenade detonated flush against geometry (e.g. resting exactly on a floor),
+            // the seed cell can end up embedded in/grazing that collider, which makes the very
+            // first blocking checks unreliable. Nudge it clear before flood-filling from it.
+            if (CellObstructed(origin))
+            {
+                origin += Vector3.up * (cellSize * 0.5f + wallCheckRadius);
+                if (debugLogStats)
+                    Debug.Log($"[SmokeVolume] Seed was embedded in geometry, nudged to {origin}", this);
+            }
+
+            floorClampY = float.NegativeInfinity;
+            if (clampToFloorBelowSeed &&
+                Physics.Raycast(origin + Vector3.up * 0.05f, Vector3.down, out RaycastHit floorHit, floorSearchDistance, obstacleMask, QueryTriggerInteraction.Ignore))
+            {
+                floorClampY = floorHit.point.y + wallCheckRadius;
+                if (debugLogStats)
+                    Debug.Log($"[SmokeVolume] Floor detected at y={floorHit.point.y:F3} ({floorHit.collider.name}), clamping growth to y >= {floorClampY:F3}", this);
+            }
+            else if (clampToFloorBelowSeed && debugLogStats)
+            {
+                Debug.Log("[SmokeVolume] No floor found below seed within floorSearchDistance — floor clamp inactive for this detonation.", this);
+            }
+
+            float cellVolume = cellSize * cellSize * cellSize;
+            float sphereVolume = (4f / 3f) * Mathf.PI * radius * radius * radius;
+            targetVoxelCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume));
+            cellsPerSecond = targetVoxelCount / Mathf.Max(0.01f, growthDuration);
+            cellBudgetAccumulator = 0f;
+
+            filledCells.Clear();
+            clearedCells.Clear();
+            healTimers.Clear();
+
+            blockedNeighborChecks = 0;
+            totalNeighborChecks = 0;
+
+            revealOrder = ComputeFloodFill();
+            revealIndex = 0;
+
+            var main = smokeParticles.main;
+            main.maxParticles = targetVoxelCount + 64;
+
+            state = State.Growing;
+            stateTimer = 0f;
+
+            if (debugLogStats)
+                Debug.Log($"[SmokeVolume] BeginGrowth at {origin}. target={targetVoxelCount}, reachable={revealOrder.Count}, neighbor checks={totalNeighborChecks}, blocked by collider={blockedNeighborChecks}, obstacleMask={obstacleMask.value}", this);
+        }
+
+        Vector3 CellToWorld(Vector3Int cell) => origin + new Vector3(cell.x, cell.y, cell.z) * cellSize;
+
+        /// <summary>
+        /// True if the straight path between two adjacent cell centers is obstructed. Uses a
+        /// thick SphereCast rather than a zero-width Linecast: a plain Linecast can miss thin
+        /// geometry (a floor slab, a Plane collider) when one of the endpoints sits almost
+        /// exactly on the collider's surface, which is a floating-point razor's edge case a
+        /// swept sphere doesn't suffer from.
+        /// </summary>
+        bool CellPathBlocked(Vector3 fromWorld, Vector3 toWorld)
+        {
+            Vector3 delta = toWorld - fromWorld;
+            float dist = delta.magnitude;
+            if (dist < 0.0001f)
+                return false;
+
+            return Physics.SphereCast(fromWorld, wallCheckRadius, delta / dist, out _, dist, obstacleMask, QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>True if the given world position itself overlaps an obstacle (e.g. a cell that lands inside a floor/wall).</summary>
+        bool CellObstructed(Vector3 worldPos)
+        {
+            return Physics.CheckSphere(worldPos, wallCheckRadius, obstacleMask, QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>
+        /// Flood-fills outward from the origin using a distance-ordered (Dijkstra-style) frontier
+        /// instead of plain graph-order BFS, so cells that have to detour around an obstacle are
+        /// only revealed once the surrounding open volume has caught up to that same distance.
+        /// Without this, a thin single-file line of cells could "race" along a wall's face ahead
+        /// of the rest of the cloud, which reads as smoke climbing the wall instead of billowing
+        /// around it.
+        /// </summary>
+        List<Vector3Int> ComputeFloodFill()
+        {
+            var order = new List<Vector3Int>(targetVoxelCount);
+            var visited = new HashSet<Vector3Int> { Vector3Int.zero };
+            var frontier = new MinHeap();
+            frontier.Push(Vector3Int.zero, 0f);
+
+            while (frontier.Count > 0 && order.Count < targetVoxelCount)
+            {
+                Vector3Int cell = frontier.Pop();
+                order.Add(cell);
+
+                Vector3 cellWorld = CellToWorld(cell);
+                foreach (var offset in neighborOffsets)
+                {
+                    Vector3Int neighbor = cell + offset;
+                    if (visited.Contains(neighbor))
+                        continue;
+
+                    Vector3 neighborWorld = CellToWorld(neighbor);
+                    float sqDist = (neighborWorld - origin).sqrMagnitude;
+                    if (sqDist > radius * radius)
+                        continue;
+                    if (neighborWorld.y < floorClampY)
+                        continue;
+
+                    totalNeighborChecks++;
+                    if (CellPathBlocked(cellWorld, neighborWorld) || CellObstructed(neighborWorld))
+                    {
+                        blockedNeighborChecks++;
+                        continue;
+                    }
+
+                    visited.Add(neighbor);
+                    frontier.Push(neighbor, sqDist);
+                }
+            }
+
+            return order;
+        }
+
+        /// <summary>Minimal binary min-heap used to expand the flood-fill in distance order.</summary>
+        class MinHeap
+        {
+            readonly List<Vector3Int> cells = new List<Vector3Int>();
+            readonly List<float> priorities = new List<float>();
+
+            public int Count => cells.Count;
+
+            public void Push(Vector3Int cell, float priority)
+            {
+                cells.Add(cell);
+                priorities.Add(priority);
+                int i = cells.Count - 1;
+                while (i > 0)
+                {
+                    int parent = (i - 1) / 2;
+                    if (priorities[parent] <= priorities[i])
+                        break;
+                    Swap(parent, i);
+                    i = parent;
+                }
+            }
+
+            public Vector3Int Pop()
+            {
+                Vector3Int root = cells[0];
+                int last = cells.Count - 1;
+                cells[0] = cells[last];
+                priorities[0] = priorities[last];
+                cells.RemoveAt(last);
+                priorities.RemoveAt(last);
+
+                int i = 0;
+                int count = cells.Count;
+                while (true)
+                {
+                    int left = i * 2 + 1;
+                    int right = i * 2 + 2;
+                    int smallest = i;
+                    if (left < count && priorities[left] < priorities[smallest]) smallest = left;
+                    if (right < count && priorities[right] < priorities[smallest]) smallest = right;
+                    if (smallest == i) break;
+                    Swap(smallest, i);
+                    i = smallest;
+                }
+
+                return root;
+            }
+
+            void Swap(int a, int b)
+            {
+                (cells[a], cells[b]) = (cells[b], cells[a]);
+                (priorities[a], priorities[b]) = (priorities[b], priorities[a]);
+            }
+        }
+
+        void Update()
+        {
+            switch (state)
+            {
+                case State.Growing:
+                    TickGrowth();
+                    break;
+                case State.Idle:
+                    stateTimer += Time.deltaTime;
+                    if (stateTimer >= lifeDuration)
+                    {
+                        state = State.Dissipating;
+                        stateTimer = 0f;
+                    }
+                    break;
+                case State.Dissipating:
+                    TickDissipate();
+                    break;
+            }
+
+            TickHealing();
+        }
+
+        void TickGrowth()
+        {
+            cellBudgetAccumulator += cellsPerSecond * Time.deltaTime;
+            int budget = Mathf.FloorToInt(cellBudgetAccumulator);
+            cellBudgetAccumulator -= budget;
+
+            while (budget > 0 && revealIndex < revealOrder.Count)
+            {
+                FillCell(revealOrder[revealIndex]);
+                revealIndex++;
+                budget--;
+            }
+
+            if (revealIndex >= revealOrder.Count)
+            {
+                if (debugLogStats)
+                    Debug.Log($"[SmokeVolume] Growth finished: filled={filledCells.Count}/{targetVoxelCount}", this);
+
+                state = State.Idle;
+                stateTimer = 0f;
+            }
+        }
+
+        void FillCell(Vector3Int cell)
+        {
+            if (!filledCells.Add(cell))
+                return;
+
+            if (Random.value <= particlesPerCell)
+                SpawnCellParticle(cell);
+        }
+
+        void TickDissipate()
+        {
+            stateTimer += Time.deltaTime;
+            float t = Mathf.Clamp01(stateTimer / dissipateDuration);
+            int shouldRemain = Mathf.RoundToInt(Mathf.Lerp(targetVoxelCount, 0, t));
+
+            if (filledCells.Count > shouldRemain)
+            {
+                int toRemoveCount = filledCells.Count - shouldRemain;
+                var removeList = new List<Vector3Int>(toRemoveCount);
+                foreach (var cell in filledCells)
+                {
+                    removeList.Add(cell);
+                    if (removeList.Count >= toRemoveCount)
+                        break;
+                }
+                foreach (var cell in removeList)
+                    filledCells.Remove(cell);
+            }
+
+            if (t >= 1f || filledCells.Count == 0)
+            {
+                state = State.Done;
+                Destroy(gameObject, 1f);
+            }
+        }
+
+        void TickHealing()
+        {
+            if (healTimers.Count == 0)
+                return;
+
+            List<Vector3Int> healedNow = null;
+            var keys = new List<Vector3Int>(healTimers.Keys);
+            foreach (var cell in keys)
+            {
+                float remaining = healTimers[cell] - Time.deltaTime;
+                if (remaining <= 0f)
+                {
+                    (healedNow ??= new List<Vector3Int>()).Add(cell);
+                }
+                else
+                {
+                    healTimers[cell] = remaining;
+                }
+            }
+
+            if (healedNow == null)
+                return;
+
+            foreach (var cell in healedNow)
+            {
+                healTimers.Remove(cell);
+                clearedCells.Remove(cell);
+
+                // The particle(s) that used to represent this cell were killed off in Disturb(),
+                // so the visual needs to be re-spawned to match the logic coming back online.
+                if (Random.value <= particlesPerCell)
+                    SpawnCellParticle(cell);
+            }
+        }
+
+        void SpawnCellParticle(Vector3Int cell)
+        {
+            var emitParams = new ParticleSystem.EmitParams
+            {
+                position = CellToWorld(cell) + Random.insideUnitSphere * (cellSize * 0.35f),
+                startSize = cellSize * Random.Range(2.2f, 3.4f),
+                startLifetime = lifeDuration + dissipateDuration,
+                startColor = smokeTint,
+            };
+            smokeParticles.Emit(emitParams, 1);
+        }
+
+        /// <summary>Punches a temporary hole in the smoke (explosions, bullet impacts). The hole heals back after healSeconds.</summary>
+        public void Disturb(Vector3 worldPos, float clearRadius, float healSeconds = 3f)
+        {
+            float sqRadius = clearRadius * clearRadius;
+            foreach (var cell in filledCells)
+            {
+                if ((CellToWorld(cell) - worldPos).sqrMagnitude <= sqRadius)
+                {
+                    clearedCells.Add(cell);
+                    healTimers[cell] = healSeconds;
+                }
+            }
+
+            KillParticlesNear(worldPos, clearRadius);
+        }
+
+        /// <summary>
+        /// Finds any live smoke particle within clearRadius of worldPos and fast-forwards it to
+        /// the tail of its colorOverLifetime curve so it fades out almost immediately, instead of
+        /// only updating the logic-side occupancy while the old puff keeps rendering in place.
+        /// </summary>
+        void KillParticlesNear(Vector3 worldPos, float clearRadius)
+        {
+            int count = smokeParticles.particleCount;
+            if (count == 0)
+                return;
+
+            if (scratchParticles == null || scratchParticles.Length < count)
+                scratchParticles = new ParticleSystem.Particle[Mathf.Max(count, 64)];
+
+            int actual = smokeParticles.GetParticles(scratchParticles);
+            float sqRadius = clearRadius * clearRadius;
+            const float fadeOutTime = 0.2f;
+            bool changed = false;
+
+            for (int i = 0; i < actual; i++)
+            {
+                if (scratchParticles[i].remainingLifetime > fadeOutTime &&
+                    (scratchParticles[i].position - worldPos).sqrMagnitude <= sqRadius)
+                {
+                    scratchParticles[i].remainingLifetime = fadeOutTime;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+                smokeParticles.SetParticles(scratchParticles, actual);
+        }
+
+        /// <summary>Disturbs every active smoke volume within reach of worldPos. Convenience wrapper for hit-detection callers that don't track which volume they hit.</summary>
+        public static void DisturbAt(Vector3 worldPos, float clearRadius, float healSeconds = 3f)
+        {
+            for (int i = 0; i < ActiveVolumes.Count; i++)
+            {
+                SmokeVolume volume = ActiveVolumes[i];
+                float reach = volume.radius + clearRadius;
+                if ((volume.origin - worldPos).sqrMagnitude <= reach * reach)
+                    volume.Disturb(worldPos, clearRadius, healSeconds);
+            }
+        }
+
+        bool IsCellActive(Vector3Int cell) => filledCells.Contains(cell) && !clearedCells.Contains(cell);
+
+        Vector3Int WorldToCell(Vector3 world)
+        {
+            Vector3 local = (world - origin) / cellSize;
+            return new Vector3Int(Mathf.RoundToInt(local.x), Mathf.RoundToInt(local.y), Mathf.RoundToInt(local.z));
+        }
+
+        /// <summary>True if the given world position currently sits inside active (unhealed) smoke.</summary>
+        public bool IsPositionInSmoke(Vector3 worldPos)
+        {
+            if (state == State.Inactive || state == State.Done)
+                return false;
+            if ((worldPos - origin).sqrMagnitude > radius * radius)
+                return false;
+            return IsCellActive(WorldToCell(worldPos));
+        }
+
+        /// <summary>Fraction (0-1) of the line between two points that passes through this volume's active smoke.</summary>
+        public float GetObscuration(Vector3 viewerPos, Vector3 targetPos)
+        {
+            float dist = Vector3.Distance(viewerPos, targetPos);
+            if (dist < 0.01f)
+                return IsPositionInSmoke(viewerPos) ? 1f : 0f;
+
+            int steps = Mathf.Max(1, Mathf.CeilToInt(dist / cellSize));
+            int hits = 0;
+            for (int i = 0; i <= steps; i++)
+            {
+                Vector3 p = Vector3.Lerp(viewerPos, targetPos, (float)i / steps);
+                if (IsPositionInSmoke(p))
+                    hits++;
+            }
+            return (float)hits / (steps + 1);
+        }
+
+        /// <summary>Highest obscuration between viewer and target across every active smoke volume in the scene.</summary>
+        public static float GetTotalObscuration(Vector3 viewerPos, Vector3 targetPos)
+        {
+            float best = 0f;
+            foreach (var volume in ActiveVolumes)
+                best = Mathf.Max(best, volume.GetObscuration(viewerPos, targetPos));
+            return best;
+        }
+
+        void SetupParticleSystem()
+        {
+            smokeParticles = gameObject.AddComponent<ParticleSystem>();
+
+            var main = smokeParticles.main;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.startSpeed = 0f;
+            main.startSize = 1f;
+            main.startLifetime = lifeDuration + dissipateDuration;
+            main.maxParticles = 512;
+
+            var emission = smokeParticles.emission;
+            emission.rateOverTime = 0f;
+            emission.rateOverDistance = 0f;
+
+            var shape = smokeParticles.shape;
+            shape.enabled = false;
+
+            var colorOverLifetime = smokeParticles.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(0.9f, 0.12f),
+                    new GradientAlphaKey(0.75f, 0.8f),
+                    new GradientAlphaKey(0f, 1f),
+                });
+            colorOverLifetime.color = gradient;
+
+            var sizeOverLifetime = smokeParticles.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 0.6f, 1f, 1.15f));
+
+            var renderer = smokeParticles.GetComponent<ParticleSystemRenderer>();
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.material = BuildSmokeMaterial();
+            renderer.alignment = ParticleSystemRenderSpace.View;
+        }
+
+        static Material sharedSmokeMaterial;
+
+        static Material BuildSmokeMaterial()
+        {
+            if (sharedSmokeMaterial != null)
+                return sharedSmokeMaterial;
+
+            Shader shader = Shader.Find("Custom/SmokeParticleUnlit");
+            var mat = new Material(shader) { name = "SmokeParticle (Generated)" };
+            mat.SetTexture("_MainTex", SmokeTextureUtility.GetSoftCircleTexture());
+            sharedSmokeMaterial = mat;
+            return mat;
+        }
+
+        void OnDrawGizmos()
+        {
+            Gizmos.color = new Color(0.7f, 0.7f, 0.9f, 0.4f);
+            Gizmos.DrawWireSphere(state == State.Inactive ? transform.position : origin, radius);
+
+            if (!debugDrawCells || state == State.Inactive || filledCells == null)
+                return;
+
+            float cubeSize = cellSize * 0.85f;
+            foreach (var cell in filledCells)
+            {
+                bool cleared = clearedCells.Contains(cell);
+                Gizmos.color = cleared ? new Color(1f, 0.25f, 0.2f, 0.25f) : new Color(0.9f, 0.9f, 0.9f, 0.35f);
+                Gizmos.DrawCube(CellToWorld(cell), Vector3.one * cubeSize);
+            }
+        }
+    }
+}
