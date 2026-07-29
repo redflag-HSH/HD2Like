@@ -91,6 +91,7 @@ public class WeaponController : MonoBehaviour
         // Only the weapon owner sends damage — prevents double-hits from all clients
         if (_playerMovement.IsSpawned && !_playerMovement.IsOwner) return;
 
+        // Same idea as Projectile.Update() — a swing through smoke locally clears it (see SmokeVolume.Disturb).
         SmokeVolume.DisturbAt(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);
 
         Collider[] detects = Physics.OverlapSphere(currentWeapon.attackPoint.position, currentWeapon.MeeleRadius);

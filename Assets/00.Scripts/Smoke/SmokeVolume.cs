@@ -39,6 +39,9 @@ namespace SmokeSystem
 
         public static readonly List<SmokeVolume> ActiveVolumes = new List<SmokeVolume>();
 
+        // filledCells is "the cloud's shape" (every cell that's part of this detonation).
+        // clearedCells is the subset of that shape currently punched out by Disturb().
+        // healTimers counts down how long each cleared cell has left before it's eligible to regrow.
         readonly HashSet<Vector3Int> filledCells = new HashSet<Vector3Int>();
         readonly HashSet<Vector3Int> clearedCells = new HashSet<Vector3Int>();
         readonly Dictionary<Vector3Int, float> healTimers = new Dictionary<Vector3Int, float>();
@@ -72,6 +75,10 @@ namespace SmokeSystem
             SetupParticleSystem();
         }
 
+        // Registered via OnEnable/OnDisable rather than Awake/OnDestroy because
+        // SmokeGrenadeProjectile keeps this component disabled until the grenade actually
+        // detonates — flipping it on is what both starts growth and makes the volume visible
+        // to queries like IsPositionInSmoke.
         void OnEnable() => ActiveVolumes.Add(this);
         void OnDisable() => ActiveVolumes.Remove(this);
 
@@ -259,6 +266,10 @@ namespace SmokeSystem
             }
         }
 
+        // Lifecycle: Inactive (waiting for BeginGrowth) -> Growing (revealing cells) ->
+        // Idle (fully formed, just waiting out lifeDuration) -> Dissipating (shrinking back
+        // to nothing) -> Done (gameObject destroyed). Disturb()/healing run independently of
+        // this switch, which is why TickHealing() is called unconditionally below.
         void Update()
         {
             switch (state)
@@ -282,6 +293,10 @@ namespace SmokeSystem
             TickHealing();
         }
 
+        // Reveals cells at a steady rate (cellsPerSecond) instead of all at once. The
+        // accumulator keeps the reveal rate correct regardless of frame rate: fractional
+        // progress (e.g. 2.7 cells this frame) carries over to the next frame instead of
+        // being dropped by FloorToInt every tick.
         void TickGrowth()
         {
             cellBudgetAccumulator += cellsPerSecond * Time.deltaTime;
@@ -314,6 +329,11 @@ namespace SmokeSystem
                 SpawnCellParticle(cell);
         }
 
+        // Mirrors TickGrowth's budget idea in reverse: work out how many cells *should* still
+        // be filled at this point in the fade (shouldRemain), then trim off however many extra
+        // ones are still sitting in filledCells to get there. Which specific cells get picked
+        // is arbitrary (HashSet iteration order) — fine here since dissipation is a one-off
+        // fade-to-nothing, not something that needs to look directional.
         void TickDissipate()
         {
             stateTimer += Time.deltaTime;
@@ -344,6 +364,13 @@ namespace SmokeSystem
         void TickHealing()
         {
             if (healTimers.Count == 0)
+                return;
+
+            // Once the cloud starts dissipating there's no "back to full" left to heal toward —
+            // letting a timer fire here would pop a single cell back to a fresh, full-lifetime
+            // particle while everything around it is fading out (or already gone), which reads
+            // as a dense patch that refuses to clear.
+            if (state == State.Dissipating || state == State.Done)
                 return;
 
             List<Vector3Int> healedNow = null;
@@ -494,6 +521,12 @@ namespace SmokeSystem
             return best;
         }
 
+        // Configured entirely in code instead of on a serialized ParticleSystem asset, so the
+        // whole smoke module (this + the generated texture in SmokeTextureUtility + the custom
+        // shader) drops into a project with zero external asset dependencies. Position/size/
+        // color for every particle are supplied per-emit in SpawnCellParticle, so time-based
+        // emission is turned off and the shape module (which would otherwise pick spawn
+        // positions itself) is disabled.
         void SetupParticleSystem()
         {
             smokeParticles = gameObject.AddComponent<ParticleSystem>();
@@ -540,6 +573,10 @@ namespace SmokeSystem
 
         static Material sharedSmokeMaterial;
 
+        // A stock URP Lit/Unlit shader needs several surface-type keywords and blend properties
+        // set in lockstep to render as soft, alpha-blended particles, which is fragile to
+        // replicate from script. Shipping a small dedicated shader (SmokeParticleUnlit) that's
+        // alpha-blended by construction sidesteps that entirely.
         static Material BuildSmokeMaterial()
         {
             if (sharedSmokeMaterial != null)

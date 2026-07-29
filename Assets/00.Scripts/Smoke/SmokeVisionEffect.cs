@@ -19,6 +19,9 @@ namespace SmokeSystem
         float originalFogDensity;
         float currentInSmoke;
 
+        // Captured once so smoke can temporarily override the scene's fog and then cleanly
+        // hand it back — both every frame once fully out of smoke, and in OnDestroy if this
+        // component itself goes away mid-effect.
         void Start()
         {
             originalFogEnabled = RenderSettings.fog;

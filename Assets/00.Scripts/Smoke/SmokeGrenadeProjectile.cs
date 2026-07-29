@@ -33,6 +33,11 @@ namespace SmokeSystem
             rb.angularDamping = 0.2f;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
+            // Built in code rather than referencing a shared PhysicsMaterial asset — same
+            // reasoning as the rest of this module: nothing outside these scripts needs to
+            // exist for the grenade to work. Real bounciness/friction here (instead of a
+            // custom OnCollisionEnter reflect) means PhysX's own solver produces the bounce,
+            // so there's no risk of reading an already-resolved velocity after the fact.
             var collider = GetComponent<Collider>();
             if (collider != null)
             {
@@ -47,8 +52,12 @@ namespace SmokeSystem
             }
 
             smokeVolume = GetComponent<SmokeVolume>();
-            smokeVolume.enabled = false;
+            smokeVolume.enabled = false; // stays dormant until the fuse runs out — see Detonate()
 
+            // A separate child object (rather than this GameObject's own renderer) so the
+            // grenade's model can be hidden on detonation while the Rigidbody/Collider/
+            // SmokeVolume on the root keep existing — this same GameObject becomes the smoke
+            // cloud instead of being replaced by a newly spawned one.
             visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             visual.name = "Visual";
             visual.transform.SetParent(transform, false);
@@ -97,6 +106,8 @@ namespace SmokeSystem
             rb.angularVelocity = Vector3.zero;
             rb.isKinematic = true;
 
+            // Enabling triggers SmokeVolume.OnEnable() (registers it in ActiveVolumes) before
+            // growth starts, so it's already queryable the moment BeginGrowth runs.
             smokeVolume.enabled = true;
             smokeVolume.BeginGrowth(transform.position);
         }

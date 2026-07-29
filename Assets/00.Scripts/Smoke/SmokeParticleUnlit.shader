@@ -1,3 +1,8 @@
+// Minimal unlit, alpha-blended, vertex-color-tinted particle shader for URP. Hand-written
+// instead of reusing a stock Lit/Unlit shader because getting a prebuilt shader into
+// transparent mode from script means juggling several surface-type keywords/properties in
+// lockstep (see SmokeVolume.BuildSmokeMaterial) — this one is transparent unconditionally,
+// so there's nothing to get wrong.
 Shader "Custom/SmokeParticleUnlit"
 {
     Properties
@@ -10,6 +15,7 @@ Shader "Custom/SmokeParticleUnlit"
     {
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "True" }
 
+        // Standard alpha blend; no depth write so overlapping smoke puffs don't occlude each other oddly.
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         Cull Off
@@ -59,6 +65,8 @@ Shader "Custom/SmokeParticleUnlit"
 
             half4 Frag(Varyings input) : SV_Target
             {
+                // Texture alpha (the soft circle sprite) * per-particle vertex color
+                // (ParticleSystem's colorOverLifetime/startColor) * material tint.
                 half4 tex = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
                 half4 color = tex * input.color * _BaseColor;
                 color.rgb = MixFog(color.rgb, input.fogFactor);

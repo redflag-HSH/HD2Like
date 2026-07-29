@@ -31,6 +31,7 @@ public class Projectile : NetworkBehaviour
     protected virtual void Update()
     {
         Perform();
+        // Lets this projectile punch a temporary hole through any smoke it flies through — see SmokeVolume.Disturb.
         SmokeVolume.DisturbAt(transform.position, _smokeDisturbRadius);
         if (!_special && (IsServer || !IsSpawned))
             CheckCollide();

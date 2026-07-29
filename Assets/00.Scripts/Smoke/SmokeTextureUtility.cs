@@ -29,7 +29,7 @@ namespace SmokeSystem
                 {
                     float dist = Vector2.Distance(new Vector2(x, y), center) / maxDist;
                     float alpha = Mathf.SmoothStep(1f, 0f, Mathf.Clamp01(dist));
-                    alpha = Mathf.Pow(alpha, 1.6f);
+                    alpha = Mathf.Pow(alpha, 1.6f); // pulls the falloff in so it reads as a soft puff, not a flat disc
                     pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
