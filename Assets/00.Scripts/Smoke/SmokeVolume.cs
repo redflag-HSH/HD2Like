@@ -1,5 +1,8 @@
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace SmokeSystem
 {
@@ -18,6 +21,8 @@ namespace SmokeSystem
         [SerializeField] float cellSize = 0.4f;
         [SerializeField] LayerMask obstacleMask = ~0;
         [SerializeField] float wallCheckRadius = 0.12f;
+        [Tooltip("Roughly how many milliseconds DiscoverCells is allowed to spend per frame before yielding. A time budget (rather than a fixed cell count) keeps the per-frame cost similar whether the space is cramped — few cells reachable at all — or wide open, where nearly every cell needs the pricier origin-visibility check.")]
+        [SerializeField] float discoveryMillisecondsPerFrame = 2f;
 
         [Header("Floor Safety Net")]
         [Tooltip("Extra hard clamp: raycasts straight down from the seed once at detonation and never lets growth go below whatever floor it finds, regardless of what the per-edge checks decide. Disable if you need smoke to flow down stairs/ledges to a lower floor.")]
@@ -55,6 +60,7 @@ namespace SmokeSystem
         float cellBudgetAccumulator;
         int blockedNeighborChecks;
         int totalNeighborChecks;
+        bool discoveryComplete;
 
         ParticleSystem smokeParticles;
         ParticleSystem.Particle[] scratchParticles;
@@ -123,17 +129,20 @@ namespace SmokeSystem
             blockedNeighborChecks = 0;
             totalNeighborChecks = 0;
 
-            revealOrder = ComputeFloodFill();
+            // Discovering which cells are even reachable can mean thousands of physics queries
+            // for a large or wide-open volume — spread across frames (see DiscoverCells) rather
+            // than paid all at once here, which used to be able to spike a single frame badly,
+            // worst of all in open spaces where almost nothing prunes the search early.
+            revealOrder = new List<Vector3Int>(targetVoxelCount);
             revealIndex = 0;
+            discoveryComplete = false;
+            StartCoroutine(DiscoverCells());
 
             var main = smokeParticles.main;
             main.maxParticles = targetVoxelCount + 64;
 
             state = State.Growing;
             stateTimer = 0f;
-
-            if (debugLogStats)
-                Debug.Log($"[SmokeVolume] BeginGrowth at {origin}. target={targetVoxelCount}, reachable={revealOrder.Count}, neighbor checks={totalNeighborChecks}, blocked by collider={blockedNeighborChecks}, obstacleMask={obstacleMask.value}", this);
         }
 
         Vector3 CellToWorld(Vector3Int cell) => origin + new Vector3(cell.x, cell.y, cell.z) * cellSize;
@@ -162,26 +171,53 @@ namespace SmokeSystem
         }
 
         /// <summary>
-        /// Flood-fills outward from the origin using a distance-ordered (Dijkstra-style) frontier
-        /// instead of plain graph-order BFS, so cells that have to detour around an obstacle are
-        /// only revealed once the surrounding open volume has caught up to that same distance.
-        /// Without this, a thin single-file line of cells could "race" along a wall's face ahead
-        /// of the rest of the cloud, which reads as smoke climbing the wall instead of billowing
-        /// around it.
+        /// True if the origin has a clear direct line to worldPos. Deliberately a plain
+        /// zero-width Linecast rather than CellPathBlocked's thick SphereCast: this only decides
+        /// which distance metric a cell gets in DiscoverCells (a shape refinement), not
+        /// whether smoke can actually flow there, so it doesn't need the thin-geometry robustness
+        /// — and unlike the adjacent-cell checks (cellSize apart), this one runs up to `radius`
+        /// long for every newly discovered cell, so the cheaper query type matters a lot here.
         /// </summary>
-        List<Vector3Int> ComputeFloodFill()
+        bool HasLineOfSight(Vector3 fromWorld, Vector3 toWorld)
         {
-            var order = new List<Vector3Int>(targetVoxelCount);
+            return !Physics.Linecast(fromWorld, toWorld, obstacleMask, QueryTriggerInteraction.Ignore);
+        }
+
+        /// <summary>
+        /// Flood-fills outward from the origin, spread across frames instead of resolved in one
+        /// synchronous burst (see BeginGrowth), appending straight into revealOrder as cells are
+        /// confirmed reachable so TickGrowth can start revealing the nearest ones before the
+        /// furthest ones have even been worked out.
+        ///
+        /// Each newly discovered cell gets a "distance" used both to order the reveal
+        /// (Dijkstra-style, so cells don't billow out faster than they should) and to cap growth
+        /// at `radius`. That distance is the straight-line distance from the origin whenever the
+        /// origin can actually see the cell directly — which keeps the cloud spherical through
+        /// open space, since most cells in a room have a clear view of the origin — and only
+        /// falls back to the accumulated hop-path distance for cells that are genuinely shadowed
+        /// behind an obstacle. That way it's specifically detours that get penalized, not "not
+        /// being on an axis": a plain 6-directional grid alone makes diagonal directions cost up
+        /// to ~1.73x their real distance (three hops to cover what a straight corner-to-corner
+        /// line does in one), which would flatten the whole cloud toward a rounded cube even with
+        /// nothing in the way.
+        /// </summary>
+        IEnumerator DiscoverCells()
+        {
             var visited = new HashSet<Vector3Int> { Vector3Int.zero };
+            var pathDistance = new Dictionary<Vector3Int, float> { [Vector3Int.zero] = 0f };
             var frontier = new MinHeap();
             frontier.Push(Vector3Int.zero, 0f);
 
-            while (frontier.Count > 0 && order.Count < targetVoxelCount)
+            var frameBudget = Stopwatch.StartNew();
+
+            while (frontier.Count > 0 && revealOrder.Count < targetVoxelCount)
             {
                 Vector3Int cell = frontier.Pop();
-                order.Add(cell);
+                revealOrder.Add(cell);
 
                 Vector3 cellWorld = CellToWorld(cell);
+                float cellDist = pathDistance[cell];
+
                 foreach (var offset in neighborOffsets)
                 {
                     Vector3Int neighbor = cell + offset;
@@ -189,8 +225,11 @@ namespace SmokeSystem
                         continue;
 
                     Vector3 neighborWorld = CellToWorld(neighbor);
-                    float sqDist = (neighborWorld - origin).sqrMagnitude;
-                    if (sqDist > radius * radius)
+
+                    // Straight-line distance is always <= any real path distance, so it's a
+                    // safe, physics-free early-out before spending any raycasts on this cell.
+                    float straightDist = Vector3.Distance(origin, neighborWorld);
+                    if (straightDist > radius)
                         continue;
                     if (neighborWorld.y < floorClampY)
                         continue;
@@ -202,12 +241,29 @@ namespace SmokeSystem
                         continue;
                     }
 
+                    // Only pay the detour penalty for cells the origin can't see directly.
+                    float neighborDist = HasLineOfSight(origin, neighborWorld)
+                        ? straightDist
+                        : cellDist + cellSize;
+                    if (neighborDist > radius)
+                        continue;
+
                     visited.Add(neighbor);
-                    frontier.Push(neighbor, sqDist);
+                    pathDistance[neighbor] = neighborDist;
+                    frontier.Push(neighbor, neighborDist);
+                }
+
+                if (frameBudget.Elapsed.TotalMilliseconds >= discoveryMillisecondsPerFrame)
+                {
+                    yield return null;
+                    frameBudget.Restart();
                 }
             }
 
-            return order;
+            discoveryComplete = true;
+
+            if (debugLogStats)
+                Debug.Log($"[SmokeVolume] Discovery finished at {origin}. target={targetVoxelCount}, reachable={revealOrder.Count}, neighbor checks={totalNeighborChecks}, blocked by collider={blockedNeighborChecks}, obstacleMask={obstacleMask.value}", this);
         }
 
         /// <summary>Minimal binary min-heap used to expand the flood-fill in distance order.</summary>
@@ -310,7 +366,10 @@ namespace SmokeSystem
                 budget--;
             }
 
-            if (revealIndex >= revealOrder.Count)
+            // Gate on discoveryComplete, not just revealIndex catching up to the current
+            // revealOrder.Count — otherwise reveal briefly outpacing discovery (before the next
+            // batch of cells has been found yet) would look like growth finished early.
+            if (discoveryComplete && revealIndex >= revealOrder.Count)
             {
                 if (debugLogStats)
                     Debug.Log($"[SmokeVolume] Growth finished: filled={filledCells.Count}/{targetVoxelCount}", this);

@@ -111,11 +111,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   radius: 7
-  cellSize: 0.5
+  cellSize: 0.7
   obstacleMask:
     serializedVersion: 2
     m_Bits: 4294967295
   wallCheckRadius: 0.12
+  discoveryMillisecondsPerFrame: 2
   clampToFloorBelowSeed: 0
   floorSearchDistance: 3
   growthDuration: 10
