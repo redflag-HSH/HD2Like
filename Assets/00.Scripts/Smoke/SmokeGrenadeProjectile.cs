@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 namespace SmokeSystem
@@ -6,10 +7,19 @@ namespace SmokeSystem
     /// Thrown grenade: bounces around under normal physics for a fixed fuse time (like CS2's
     /// grenades, which pop on a timer rather than on impact), then goes inert and hands off to
     /// the SmokeVolume on the same object to grow the smoke cloud.
+    ///
+    /// Networked (when spawned via NetworkObject.Spawn, e.g. from SmokeGrenadeThrower's
+    /// ServerRpc): physics/bouncing is simulated only on the server (see the NetworkRigidbody +
+    /// NetworkTransform pair on the prefab, which keeps clients kinematic and replicates the
+    /// server's transform), the fuse only counts down on the server, and detonation is broadcast
+    /// to every client via DetonateClientRpc so everyone pops - and starts flood-filling their
+    /// own local SmokeVolume copy from the same origin - at the same instant. Falls back to
+    /// running everything locally when instantiated outside of a network session (IsSpawned ==
+    /// false), matching the pattern used by Projectile.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SmokeVolume))]
-    public class SmokeGrenadeProjectile : MonoBehaviour
+    public class SmokeGrenadeProjectile : NetworkBehaviour
     {
         [Header("Fuse")]
         [SerializeField] float fuseTime = 2.2f;
@@ -86,9 +96,27 @@ namespace SmokeSystem
             if (!thrown || detonated)
                 return;
 
+            // Only the server (or a standalone, non-networked instance) owns the fuse - clients
+            // just wait for DetonateClientRpc so every peer detonates in lockstep.
+            if (IsSpawned && !IsServer)
+                return;
+
             fuseTimer -= Time.deltaTime;
             if (fuseTimer <= 0f)
-                Detonate();
+            {
+                detonated = true; // stop the countdown above from firing again while the RPC round-trips
+                if (IsSpawned)
+                    DetonateClientRpc();
+                else
+                    Detonate();
+            }
+        }
+
+        /// <summary>Broadcasts the detonation to every client (and the host) so the pop and smoke growth start in lockstep instead of drifting with each peer's own fuse timer.</summary>
+        [ClientRpc]
+        void DetonateClientRpc()
+        {
+            Detonate();
         }
 
         void Detonate()

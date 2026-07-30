@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Netcode;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 
@@ -19,6 +20,7 @@ namespace SmokeSystem
         [Header("Shape")]
         [SerializeField] float radius = 4.5f;
         [SerializeField] float cellSize = 0.4f;
+        [Tooltip("Should only contain static level geometry. The flood fill runs independently and locally on every client/server (only the detonation trigger is networked), so a dynamic collider here - most importantly the Players layer - could make different peers see different smoke shapes depending on where bodies happened to be at the exact moment their own copy ran DiscoverCells.")]
         [SerializeField] LayerMask obstacleMask = ~0;
         [SerializeField] float wallCheckRadius = 0.12f;
         [Tooltip("Roughly how many milliseconds DiscoverCells is allowed to spend per frame before yielding. A time budget (rather than a fixed cell count) keeps the per-frame cost similar whether the space is cramped — few cells reachable at all — or wide open, where nearly every cell needs the pricier origin-visibility check.")]
@@ -416,8 +418,33 @@ namespace SmokeSystem
             if (t >= 1f || filledCells.Count == 0)
             {
                 state = State.Done;
-                Destroy(gameObject, 1f);
+                DestroySelf();
             }
+        }
+
+        // A grenade-hosted volume's GameObject is a spawned NetworkObject once networked, and
+        // every peer runs this same dissipate countdown independently and locally (see the
+        // class-level doc comment) — so a plain per-peer Destroy() here would desync NGO's spawn
+        // bookkeeping (each client tearing down its copy behind the server's back instead of via
+        // Despawn). Only the server may despawn a networked instance; clients just wait for that
+        // to remove their own copy. Falls straight back to a plain local Destroy when there's no
+        // NetworkObject at all, since this module is also used fully offline/non-networked.
+        void DestroySelf()
+        {
+            var netObj = GetComponent<NetworkObject>();
+            if (netObj != null && netObj.IsSpawned)
+            {
+                if (netObj.NetworkManager != null && netObj.NetworkManager.IsServer)
+                    Invoke(nameof(DespawnNetworkObject), 1f);
+                return;
+            }
+
+            Destroy(gameObject, 1f);
+        }
+
+        void DespawnNetworkObject()
+        {
+            GetComponent<NetworkObject>().Despawn();
         }
 
         void TickHealing()
