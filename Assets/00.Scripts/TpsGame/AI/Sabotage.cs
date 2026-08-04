@@ -52,6 +52,15 @@ public class Sabotage : State
         {
             Debug.LogWarning("[Sabotage] MainFire not found. Returning to patrol.");
             machine.ChangeState(GetComponent<SabotagePatrol>());
+            // StateMachine.ChangeState only calls Exit() on the outgoing state — it never
+            // destroys the component. Without this, every failed attempt (SabotagePatrol
+            // rolls a 1%-per-frame chance to AddComponent<Sabotage>, which immediately bails
+            // here whenever MainFire is unassigned) leaves a dead Sabotage component
+            // permanently attached to the GameObject. Those stay reachable via the
+            // GameObject's component list, so they're never garbage-collected either — left
+            // unchecked this is an ever-growing live heap that makes every GC pass more
+            // expensive the longer the session runs.
+            Destroy(this);
             return;
         }
 

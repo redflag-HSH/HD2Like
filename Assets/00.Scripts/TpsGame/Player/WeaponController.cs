@@ -61,6 +61,11 @@ public class WeaponController : MonoBehaviour
         {
             StartCoroutine(attackwait());
         }
+        else if (currentWeapon.type == Weapon.weaponType.throwable)
+        {
+            currentWeapon.Throw();
+            AmmoCheck();
+        }
     }
 
     public void FollowTarget()

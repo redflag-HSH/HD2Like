@@ -93,6 +93,8 @@ namespace SmokeSystem
         /// <summary>Starts the flood-fill simulation from the given world position.</summary>
         public void BeginGrowth(Vector3 worldOrigin)
         {
+            var setupTimer = Stopwatch.StartNew();
+
             origin = worldOrigin;
 
             // If the grenade detonated flush against geometry (e.g. resting exactly on a floor),
@@ -138,6 +140,10 @@ namespace SmokeSystem
             revealOrder = new List<Vector3Int>(targetVoxelCount);
             revealIndex = 0;
             discoveryComplete = false;
+
+            if (debugLogStats)
+                Debug.Log($"[SmokeVolume] BeginGrowth setup: {setupTimer.Elapsed.TotalMilliseconds:F2}ms (target={targetVoxelCount} cells, radius={radius}, cellSize={cellSize}) before discovery starts.", this);
+
             StartCoroutine(DiscoverCells());
 
             var main = smokeParticles.main;
@@ -210,7 +216,11 @@ namespace SmokeSystem
             var frontier = new MinHeap();
             frontier.Push(Vector3Int.zero, 0f);
 
+            var totalTimer = Stopwatch.StartNew();
             var frameBudget = Stopwatch.StartNew();
+            int yieldedFrameCount = 0;
+            double worstFrameMs = 0;
+            double frameMsSum = 0;
 
             while (frontier.Count > 0 && revealOrder.Count < targetVoxelCount)
             {
@@ -257,6 +267,11 @@ namespace SmokeSystem
 
                 if (frameBudget.Elapsed.TotalMilliseconds >= discoveryMillisecondsPerFrame)
                 {
+                    double frameMs = frameBudget.Elapsed.TotalMilliseconds;
+                    frameMsSum += frameMs;
+                    worstFrameMs = System.Math.Max(worstFrameMs, frameMs);
+                    yieldedFrameCount++;
+
                     yield return null;
                     frameBudget.Restart();
                 }
@@ -265,7 +280,11 @@ namespace SmokeSystem
             discoveryComplete = true;
 
             if (debugLogStats)
+            {
                 Debug.Log($"[SmokeVolume] Discovery finished at {origin}. target={targetVoxelCount}, reachable={revealOrder.Count}, neighbor checks={totalNeighborChecks}, blocked by collider={blockedNeighborChecks}, obstacleMask={obstacleMask.value}", this);
+                double avgFrameMs = yieldedFrameCount > 0 ? frameMsSum / yieldedFrameCount : 0;
+                Debug.Log($"[SmokeVolume] Timing: total={totalTimer.Elapsed.TotalMilliseconds:F1}ms across {yieldedFrameCount} yielded frame(s), avg={avgFrameMs:F2}ms/frame, worst={worstFrameMs:F2}ms/frame (per-frame budget={discoveryMillisecondsPerFrame}ms).", this);
+            }
         }
 
         /// <summary>Minimal binary min-heap used to expand the flood-fill in distance order.</summary>
@@ -497,6 +516,10 @@ namespace SmokeSystem
                 startSize = cellSize * Random.Range(2.2f, 3.4f),
                 startLifetime = lifeDuration + dissipateDuration,
                 startColor = smokeTint,
+                // The puff texture isn't radially symmetric anymore (see SmokeTextureUtility),
+                // so without a random spin every copy would show the same lobes in the same
+                // place and the cloud would read as a repeated stamp instead of smoke.
+                rotation = Random.Range(0f, 360f),
             };
             smokeParticles.Emit(emitParams, 1);
         }

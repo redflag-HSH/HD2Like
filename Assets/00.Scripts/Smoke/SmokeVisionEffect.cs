@@ -4,9 +4,12 @@ using UnityEngine;
 namespace SmokeSystem
 {
     /// <summary>
-    /// Attach to a camera (typically the player's) to whiteout/fog the view while standing
-    /// inside an active SmokeVolume, using the scene's built-in fog so it needs no custom
-    /// post-process pipeline.
+    /// Attach to a camera (typically the player's) to whiteout/fog the view when its sightline
+    /// passes through an active SmokeVolume — either standing directly inside it, or looking
+    /// through it from outside. The latter matters a lot for a third-person shoulder camera: it
+    /// sits behind/beside the character, so it's very often outside the cloud even while the
+    /// player is looking straight through a wall of it, which an "is my own position inside
+    /// smoke" check alone would completely miss.
     ///
     /// RenderSettings.fog is scene-global, not per-camera, so if this ever ends up on something
     /// that's spawned once per networked player (rather than the single local camera rig), every
@@ -20,6 +23,8 @@ namespace SmokeSystem
         [SerializeField] Color smokeFogColor = new Color(0.75f, 0.75f, 0.78f);
         [SerializeField] float maxFogDensity = 0.35f;
         [SerializeField] float blendSpeed = 4f;
+        [Tooltip("How far ahead along the view direction to sample for smoke. Kept well short of weapon aim range — this only needs to cover roughly how far you could actually be looking through a cloud, and GetObscuration's cost scales with this distance.")]
+        [SerializeField] float sightDistance = 20f;
 
         bool originalFogEnabled;
         Color originalFogColor;
@@ -46,17 +51,8 @@ namespace SmokeSystem
             if (networkObject != null && !networkObject.IsOwner)
                 return;
 
-            bool insideSmoke = false;
-            foreach (var volume in SmokeVolume.ActiveVolumes)
-            {
-                if (volume.IsPositionInSmoke(transform.position))
-                {
-                    insideSmoke = true;
-                    break;
-                }
-            }
-
-            currentInSmoke = Mathf.MoveTowards(currentInSmoke, insideSmoke ? 1f : 0f, blendSpeed * Time.deltaTime);
+            float targetObscuration = ComputeObscuration();
+            currentInSmoke = Mathf.MoveTowards(currentInSmoke, targetObscuration, blendSpeed * Time.deltaTime);
 
             if (currentInSmoke > 0.001f)
             {
@@ -72,6 +68,28 @@ namespace SmokeSystem
                 RenderSettings.fogColor = originalFogColor;
                 RenderSettings.fogDensity = originalFogDensity;
             }
+        }
+
+        /// <summary>
+        /// How obstructed the view is, 0 (clear) to 1 (fully white-out). Standing directly
+        /// inside smoke always reads as fully obstructed; otherwise this samples along the
+        /// actual view ray — out to whatever it first hits, or sightDistance if nothing does —
+        /// via SmokeVolume.GetTotalObscuration, rather than only checking this transform's own
+        /// position.
+        /// </summary>
+        float ComputeObscuration()
+        {
+            foreach (var volume in SmokeVolume.ActiveVolumes)
+            {
+                if (volume.IsPositionInSmoke(transform.position))
+                    return 1f;
+            }
+
+            float maxDist = Physics.Raycast(transform.position, transform.forward, out RaycastHit hit, sightDistance)
+                ? hit.distance
+                : sightDistance;
+
+            return SmokeVolume.GetTotalObscuration(transform.position, transform.position + transform.forward * maxDist);
         }
 
         void OnDestroy()

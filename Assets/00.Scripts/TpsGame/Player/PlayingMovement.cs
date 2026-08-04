@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using SmokeSystem;
 using TMPro;
 using TMPro.Examples;
 using Unity.Netcode;
@@ -59,6 +60,9 @@ public class PlayingMovement : NetworkBehaviour
 
     [Header("Projectiles")]
     [SerializeField] public List<GameObject> projectilePrefabs;
+
+    [Header("Grenades")]
+    [SerializeField] public List<GameObject> grenadePrefabs;
 
     [Header("inventory")]
     List<Weapon> weapons;
@@ -246,7 +250,7 @@ public class PlayingMovement : NetworkBehaviour
         if (weapons.Count < 4)
         {
             Debug.Log(weapon.gameObject);
-            if (weapon.type == Weapon.weaponType.shooter)
+            if (weapon.type == Weapon.weaponType.shooter || weapon.type == Weapon.weaponType.throwable)
             {
                 weapon.transform.position = transform.position;
                 weapon.transform.rotation = controller.transform.rotation;
@@ -319,6 +323,16 @@ public class PlayingMovement : NetworkBehaviour
         NetworkObject no = go.GetComponent<NetworkObject>();
         no.Spawn();
         go.GetComponent<Projectile>().SetDamage(damage);
+    }
+
+    [ServerRpc]
+    public void SpawnGrenadeServerRpc(Vector3 pos, Vector3 velocity, int prefabIndex)
+    {
+        if (prefabIndex < 0 || prefabIndex >= grenadePrefabs.Count) return;
+        GameObject go = Instantiate(grenadePrefabs[prefabIndex], pos, Quaternion.identity);
+        NetworkObject no = go.GetComponent<NetworkObject>();
+        no.Spawn();
+        go.GetComponent<SmokeGrenadeProjectile>().Throw(velocity);
     }
 
     // Runs on the server. Despawns the old display weapon and spawns a new one
